@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - GasLog</title>
+    <link rel="icon" type="image/png" href="../app/gaslog.png">
+    <link rel="stylesheet" href="system-design.css">
+</head>
+<body>
+    <!-- Burger Menu Button -->
+    <button class="burger-btn" onclick="toggleNav()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Navigation Sidebar -->
+    <nav class="nav-sidebar" id="navSidebar">
+        <div class="nav-sidebar-header">
+            <h2>GasLog</h2>
+            <button class="nav-close" onclick="toggleNav()">×</button>
+        </div>
+        <div class="nav-menu">
+            <a href="index.html">Refill</a>
+            <a href="vehicles.html">Vehicles</a>
+            <a href="stations.html">Stations</a>
+            <a href="login.html">Login</a>
+            <a href="settings.html">Settings</a>
+            <a href="about.html" class="active">About</a>
+        </div>
+    </nav>
+    <div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
+
+    <div class="app-container">
+        <div class="page-header">
+            <h1>About GasLog</h1>
+            <p>Fuel tracking for everyday drivers</p>
+        </div>
+
+        <section class="content-section">
+            <h2>Application</h2>
+            <dl class="info-grid">
+                <dt>Name:</dt>
+                <dd>GasLog</dd>
+
+                <dt>Version:</dt>
+                <dd>1.0.0 (mockup)</dd>
+
+                <dt>Description:</dt>
+                <dd>Track vehicle refills, fuel costs, and station usage across your vehicles.</dd>
+
+                <dt>Modes:</dt>
+                <dd>Invite mode (local storage) and logged-in mode (API)</dd>
+
+                <dt>Languages:</dt>
+                <dd>English, French</dd>
+            </dl>
+        </section>
+
+        <section class="content-section">
+            <h2>Useful Links</h2>
+            <div class="button-row">
+                <button type="button" class="btn btn-primary" onclick="window.location.href='terms.html'">Terms</button>
+                <button type="button" class="btn btn-primary" onclick="window.location.href='index.html'">Back to Refill</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

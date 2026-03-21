@@ -1,0 +1,167 @@
+<!-- BEGIN header.phtml -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GasLog - Fuel Tracking</title>
+    <link rel="icon" type="image/png" href="../app/gaslog.png">
+    <link rel="stylesheet" href="system-design.css">
+</head>
+<body>
+    <!-- Burger Menu Button -->
+    <button class="burger-btn" id="navToggleBtn" type="button">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Navigation Sidebar -->
+    <nav class="nav-sidebar" id="navSidebar">
+        <div class="nav-sidebar-header">
+            <h2>GasLog</h2>
+            <button class="nav-close" id="navCloseBtn" type="button">×</button>
+        </div>
+        <div class="nav-menu">
+            <a href="index.html" class="active">Refill</a>
+            <a href="vehicles.html">Vehicles</a>
+            <a href="stations.html">Stations</a>
+            <a href="login.html">Login</a>
+            <a href="settings.html">Settings</a>
+            <a href="about.html">About</a>
+        </div>
+    </nav>
+    <div class="nav-overlay" id="navOverlay"></div>
+<!-- END header.phtml -->
+    <div class="app-container">
+        <!-- Header -->
+        <div class="page-header">
+            <h1>GasLog</h1>
+            <p id="userStatus">Welcome anonymous user !</p>
+            <!-- Alternative: <p>You are not logged</p> -->
+        </div>
+
+        <section class="content-section" id="vehiclesSection">
+            <h2>Refill a Vehicle</h2>
+            <div class="form-group">
+                <label for="vehicleSelector">Vehicle <span id="vehicleLoading" class="hidden" aria-hidden="true">⌛</span></label>
+                <select id="vehicleSelector">
+                    <option value="" selected>Choose a vehicle</option>
+                </select>
+                <p class="text-muted mb-0" id="vehicleSelectorHint">Choose a vehicle to display the refill form.</p>
+                <p class="text-muted hidden mb-0" id="vehiclesEmptyState">No vehicles yet. Go to the Vehicles page to add one.</p>
+            </div>
+
+            <form id="refillForm" class="hidden" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="refillDate">Date &amp; Time</label>
+                    <input type="datetime-local" id="refillDate">
+                </div>
+
+                <div class="form-group">
+                    <label>Gas Station</label>
+                    <button type="button" class="btn btn-link" id="chooseStationBtn">Choose a station</button>
+                    <p class="selected-station-display" id="selectedStation" role="button" tabindex="0" title="Click to change station">No station selected</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="refillFuel">Fuel Type</label>
+                    <select id="refillFuel">
+                        <option value="">Select a fuel</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="refillTotalPrice">Total Price</label>
+                    <div class="input-group">
+                        <input type="number" id="refillTotalPrice" step="0.01" placeholder="83.67">
+                        <select id="currency">
+                            <option value="€">€</option>
+                            <option value="$">$</option>
+                            <option value="£">£</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="refillQuantity">Quantity</label>
+                    <div class="input-group">
+                        <input type="number" id="refillQuantity" step="0.01" placeholder="45.5">
+                        <select id="quantityUnit">
+                            <option value="Liter">Liter</option>
+                            <option value="USGal">USGal</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="refillUnitPrice">Unit Price</label>
+                    <div class="input-group">
+                        <input type="number" id="refillUnitPrice" step="0.01" placeholder="1.839">
+                        <select id="priceUnit">
+                            <option value="€/L">€/L</option>
+                            <option value="$/Gal">$/Gal</option>
+                            <option value="$/L">$/L</option>
+                            <option value="p/L">p/L</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="refillMileage">Mileage</label>
+                    <div class="input-suffix">
+                        <input type="number" id="refillMileage" placeholder="45320">
+                        <span id="mileageUnit">km</span>
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button type="button" class="btn btn-cancel" id="refillCancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-ok">OK</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Station Picker Overlay (Hidden by default) -->
+        <div class="overlay hidden" id="stationPickerOverlay">
+            <div class="modal">
+                <button class="modal-close" id="stationPickerCloseBtn" type="button">×</button>
+                <h2>Choose a Station</h2>
+                
+                <div class="form-group">
+                    <label>Nearest Station</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="nearestStationRadio" name="station" value="" disabled>
+                            <label for="nearestStationRadio" id="nearestStationLabel">Searching nearest station...</label>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-0 hidden" id="locationStationResult"></p>
+                </div>
+
+                <div class="form-group">
+                    <label>Recent Stations <span id="recentStationsLoading" class="hidden" aria-hidden="true">⌛</span></label>
+                    <div class="radio-group" id="recentStationsContainer">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="radio-option station-new-option">
+                        <input type="radio" id="newStationRadio" name="station" value="__new__">
+                        <input type="text" id="newStation" placeholder="Enter station name">
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button type="button" class="btn btn-cancel" id="stationPickerCancelBtn">Cancel</button>
+                    <button type="button" class="btn btn-ok" id="stationPickerOkBtn" disabled>OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/index.js"></script>
+    <script src="js/station-picker.js"></script>
+</body>
+</html>

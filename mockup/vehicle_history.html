@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle History - GasLog</title>
+    <link rel="icon" type="image/png" href="../app/gaslog.png">
+    <link rel="stylesheet" href="system-design.css">
+</head>
+<body>
+    <!-- Burger Menu Button -->
+    <button class="burger-btn" onclick="toggleNav()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Navigation Sidebar -->
+    <nav class="nav-sidebar" id="navSidebar">
+        <div class="nav-sidebar-header">
+            <h2>GasLog</h2>
+            <button class="nav-close" onclick="toggleNav()">×</button>
+        </div>
+        <div class="nav-menu">
+            <a href="index.html">Refill</a>
+            <a href="vehicles.html" class="active">Vehicles</a>
+            <a href="stations.html">Stations</a>
+            <a href="login.html">Login</a>
+            <a href="settings.html">Settings</a>
+        </div>
+    </nav>
+    <div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <div class="page-header">
+            <h1 id="pageTitle">Vehicle History</h1>
+            <p>View and edit vehicle details</p>
+        </div>
+
+        <!-- Vehicle Details Form -->
+        <section class="content-section">
+            <h2>Vehicle Information</h2>
+            
+            <form id="vehicleHistoryForm">
+                <div class="form-group">
+                    
+                    <input type="text" id="vehicleName" placeholder="e.g., Peugeot 308" maxlength="16" required>
+                </div>
+
+                <!-- Statistics -->
+                <div class="form-group">
+                    <label>Statistics <span id="refillHistoryLoading" class="hidden" aria-hidden="true">⌛</span></label>
+                    <p class="text-muted">Vehicle statistics overview</p>
+                    <div class="item-list">
+                        <div class="item-card">
+                            <div class="stats-table-wrap">
+                                <table class="stats-table table-data-mono">
+                                    <thead>
+                                        <tr>
+                                            <th>Metric</th>
+                                            <th>Last 3 refills</th>
+                                            <th>Last 10 refills</th>
+                                            <th>Last 20 000 km</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Fuel consumption (L/100km)</td>
+                                            <td id="statsFuelConsumption3">-</td>
+                                            <td id="statsFuelConsumption10">-</td>
+                                            <td id="statsFuelConsumption20000">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Cost per 100km (€/100km)</td>
+                                            <td id="statsCostPer100km3">-</td>
+                                            <td id="statsCostPer100km10">-</td>
+                                            <td id="statsCostPer100km20000">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Fuel price (€/L)</td>
+                                            <td id="statsFuelPrice3">-</td>
+                                            <td id="statsFuelPrice10">-</td>
+                                            <td id="statsFuelPrice20000">-</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="item-list">
+                        <p class="mb-0"><a href="graphics.html" id="showGraphicsLink">Show graphics</a></p>
+                    </div>
+
+                    <div class="item-list refill-history-block">
+                        <label>Refill history</label>
+                        <div class="item-card">
+                            <div class="stats-table-wrap">
+                                <table class="stats-table table-data-mono">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Total price</th>
+                                            <th>Quantity</th>
+                                            <th>Fuel price</th>
+                                            <th>Fuel type</th>
+                                            <th>Mileage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="refillHistoryBody">
+                                        <tr>
+                                            <td colspan="6" class="refill-history-empty">Log in to load refill history.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="mb-0 mt-1"><a href="refill_history.html" id="allRefillsLink">View all refill</a></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicleBrand">Brand</label>
+                    <select id="vehicleBrand">
+                        <option value="">Select a brand</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="purchaseDate">Purchase Date</label>
+                    <input type="date" id="purchaseDate">
+                </div>
+
+                <div class="form-group">
+                    <label for="initialMileage">Initial Mileage</label>
+                    <div class="input-group">
+                        <input type="number" id="initialMileage" placeholder="0">
+                        <select id="distanceUnit">
+                            <option>km</option>
+                            <option>mi</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Available Fuels</label>
+                    <p class="text-muted mb-1">Select one or more fuel types</p>
+                    <div class="push-buttons" id="fuelButtons"></div>
+                </div>
+
+                <div class="button-row">
+                    <button type="button" class="btn btn-cancel" onclick="window.location.href='vehicles.html'">Cancel</button>
+                    <button type="submit" class="btn btn-ok">OK</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Danger Zone -->
+        <section class="content-section" style="border: 2px solid #dc3545; margin-top: 2rem;">
+            <h2 style="color: #dc3545;">Danger Zone</h2>
+            <div class="form-group">
+                <p class="text-muted">Once you delete a vehicle, there is no going back. Please be certain.</p>
+                <button type="button" class="btn btn-danger" style="width: 100%;" id="deleteVehicleBtn">Delete this vehicle</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/vehicle_history.js"></script>
+</body>
+</html>

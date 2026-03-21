@@ -1,0 +1,39 @@
+<?php
+$language = Language::getCurrentLanguage();
+T_setLanguage($language);
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?=T($HTML['title'])?></title>
+    <link rel="icon" type="image/png" href="./gaslog.png">
+    <link rel="stylesheet" href="system-design.css">
+</head>
+<body>
+    <!-- Burger Menu Button -->
+    <button class="burger-btn" onclick="toggleNav()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Navigation Sidebar -->
+    <nav class="nav-sidebar" id="navSidebar">
+        <div class="nav-sidebar-header">
+            <h2>>>>>>> GasLog</h2>
+            <button class="nav-close" onclick="toggleNav()">×</button>
+        </div>
+        <div class="nav-menu">
+            <a href="index.php" class="active">Refill</a>
+            <a href="vehicles.php">Vehicles</a>
+            <a href="stations.php">Stations</a>
+            <a href="login.php">Login</a>
+            <a href="settings.php">Settings</a>
+        </div>
+    </nav>
+    <div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
+    <script language="javascript">
+        window.islogged = <?= $HTML['islogged'] ?>;
+    </script>

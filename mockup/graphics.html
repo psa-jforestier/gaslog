@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graphics - GasLog</title>
+    <link rel="icon" type="image/png" href="../app/gaslog.png">
+    <link rel="stylesheet" href="system-design.css">
+</head>
+<body>
+    <button class="burger-btn" onclick="toggleNav()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <nav class="nav-sidebar" id="navSidebar">
+        <div class="nav-sidebar-header">
+            <h2>GasLog</h2>
+            <button class="nav-close" onclick="toggleNav()">×</button>
+        </div>
+        <div class="nav-menu">
+            <a href="index.html">Refill</a>
+            <a href="vehicles.html" class="active">Vehicles</a>
+            <a href="stations.html">Stations</a>
+            <a href="login.html">Login</a>
+            <a href="settings.html">Settings</a>
+            <a href="about.html">About</a>
+        </div>
+    </nav>
+    <div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
+
+    <div class="app-container">
+        <div class="page-header">
+            <h1 id="graphicsPageTitle">Vehicle Graphics <span id="graphicsLoading" class="hidden" aria-hidden="true">⌛</span></h1>
+            <p id="graphicsPageSubtitle">Charts and trends for your vehicle statistics</p>
+        </div>
+
+        <section class="content-section">
+            <h2>Graphics</h2>
+            <div class="button-row" style="margin-top: 12px; margin-bottom: 12px;">
+                <button type="button" class="btn btn-secondary" onclick="window.history.back()">Back</button>
+                <button type="button" class="btn btn-primary showHistoryBtn">Show history</button>
+            </div>
+            <p class="text-muted">Use mouse wheel or pinch to zoom; use left click and drag to pan.</p>
+            <div style="background: #f5f5f5; border: 1px solid #d9dee6; border-radius: 8px; min-height: 320px; padding: 20px;">
+                <div style="position: relative; height: 340px; width: 100%;">
+                    <canvas id="fuelPriceChart" aria-label="Fuel price chart by refill date and time" role="img"></canvas>
+                </div>
+                <div id="fuelTypeLegend" class="text-muted" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 12px;"></div>
+            </div>
+            <div style="background: #f5f5f5; border: 1px solid #d9dee6; border-radius: 8px; min-height: 320px; padding: 20px; margin-top: 16px;">
+                <div style="position: relative; height: 340px; width: 100%;">
+                    <canvas id="mileageChart" aria-label="Mileage chart by refill date and time" role="img"></canvas>
+                </div>
+            </div>
+            <div class="button-row" style="margin-top: 16px;">
+                <button type="button" class="btn btn-secondary" onclick="window.history.back()">Back</button>
+                <button type="button" class="btn btn-primary showHistoryBtn">Show history</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <script src="js/graphics.js"></script>
+</body>
+</html>

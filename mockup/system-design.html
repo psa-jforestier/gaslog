@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Design - GasLog</title>
+    <link rel="icon" type="image/png" href="../app/gaslog.png">
+    <link rel="stylesheet" href="system-design.css">
+    <style>
+        /* Additional styles for design showcase */
+        body {
+            padding: 0;
+            max-width: none;
+        }
+        
+        .design-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .design-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .design-header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .themes-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .theme-panel {
+            border-radius: var(--card-radius);
+            padding: 25px;
+            border: 2px solid var(--panel-border);
+        }
+        
+        .theme-panel.light {
+            background: #ffffff;
+            --panel-bg: #ffffff;
+            --panel-fg: #16202a;
+            --panel-muted: #586878;
+            --panel-border: #d4dde6;
+            --input-bg: #fbfdff;
+            --input-border: #bfcddb;
+            --ok-bg: #1f8a4c;
+            --ok-hover: #176d3b;
+            --cancel-bg: #6f7e8b;
+            --cancel-hover: #5a6874;
+            --danger-bg: #bf2f2f;
+            --danger-hover: #982424;
+            --chip-bg: #e9eff6;
+            --chip-active-bg: #2a6fb2;
+            --chip-active-fg: #ffffff;
+            color: var(--panel-fg);
+        }
+        
+        .theme-panel.dark {
+            background: #1f252d;
+            --panel-bg: #1f252d;
+            --panel-fg: #eef3f9;
+            --panel-muted: #b8c2ce;
+            --panel-border: #39424d;
+            --input-bg: #242d36;
+            --input-border: #4a5665;
+            --ok-bg: #34a261;
+            --ok-hover: #2b8a52;
+            --cancel-bg: #7b8793;
+            --cancel-hover: #666f7b;
+            --danger-bg: #dc5b5b;
+            --danger-hover: #bf4949;
+            --chip-bg: #313d4a;
+            --chip-active-bg: #5da4ee;
+            --chip-active-fg: #0f1b29;
+            color: var(--panel-fg);
+        }
+        
+        .theme-title {
+            margin: 0 0 20px 0;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--panel-border);
+            font-size: 1.5rem;
+        }
+        
+        .component-group {
+            margin-bottom: 30px;
+        }
+        
+        .component-group h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.1rem;
+            color: var(--chip-active-bg);
+        }
+        
+        .component-demo {
+            padding: 15px;
+            background: var(--chip-bg);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        @media (max-width: 900px) {
+            .themes-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="design-container">
+        <div class="design-header">
+            <h1>GasLog System Design</h1>
+            <p class="text-muted">Complete UI component library in Light and Dark themes</p>
+        </div>
+
+        <div class="themes-grid">
+            <!-- LIGHT THEME -->
+            <div class="theme-panel light">
+                <h2 class="theme-title">☀️ Light Theme</h2>
+
+                <!-- Buttons -->
+                <div class="component-group">
+                    <h3>Action Buttons</h3>
+                    <div class="component-demo">
+                        <div class="button-row">
+                            <button class="btn btn-ok">OK</button>
+                            <button class="btn btn-cancel">Cancel</button>
+                            <button class="btn btn-danger">Delete</button>
+                        </div>
+                    </div>
+                    <div class="component-demo">
+                        <button class="btn btn-primary" style="width: 100%;">Primary Action</button>
+                    </div>
+                    <div class="component-demo">
+                        <button class="btn btn-secondary" style="width: 100%;">Secondary Action</button>
+                    </div>
+                    <div class="component-demo">
+                        <button class="btn btn-primary" style="width: 100%;" disabled>Disabled Action</button>
+                    </div>
+                    <div class="component-demo">
+                        <button class="btn btn-link">Link Button</button>
+                    </div>
+                </div>
+
+                <!-- Text Inputs -->
+                <div class="component-group">
+                    <h3>Text Inputs</h3>
+                    <div class="component-demo">
+                        <label for="light-text">Text Input</label>
+                        <input type="text" id="light-text" placeholder="Enter text...">
+                    </div>
+                    <div class="component-demo">
+                        <label for="light-email">Email Input</label>
+                        <input type="email" id="light-email" placeholder="email@example.com">
+                    </div>
+                    <div class="component-demo">
+                        <label for="light-textarea">Text Area</label>
+                        <textarea id="light-textarea" placeholder="Enter longer text..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Number & Date Inputs -->
+                <div class="component-group">
+                    <h3>Number & Date Inputs</h3>
+                    <div class="component-demo">
+                        <label for="light-number">Number Input (Float)</label>
+                        <input type="number" id="light-number" step="0.01" value="1.839" placeholder="0.00">
+                    </div>
+                    <div class="component-demo">
+                        <label for="light-datetime">Date Time Picker</label>
+                        <input type="datetime-local" id="light-datetime" value="2026-03-07T12:30">
+                    </div>
+                    <div class="component-demo">
+                        <label for="light-date">Date Picker</label>
+                        <input type="date" id="light-date" value="2026-03-07">
+                    </div>
+                </div>
+
+                <!-- Dropdowns -->
+                <div class="component-group">
+                    <h3>Dropdown Lists (Select)</h3>
+                    <div class="component-demo">
+                        <label for="light-vehicle">Vehicle Select</label>
+                        <select id="light-vehicle">
+                            <option selected>Peugeot 308</option>
+                            <option>Tesla Model 3</option>
+                            <option>Ford Focus</option>
+                        </select>
+                    </div>
+                    <div class="component-demo">
+                        <label for="light-fuel">Fuel Type Select</label>
+                        <select id="light-fuel">
+                            <option selected>SP95E10</option>
+                            <option>SP98</option>
+                            <option>Diesel</option>
+                            <option>E85</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Input Groups -->
+                <div class="component-group">
+                    <h3>Input Groups</h3>
+                    <div class="component-demo">
+                        <label>Price with Unit</label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" placeholder="1.839">
+                            <select>
+                                <option>€/L</option>
+                                <option>$/Gal</option>
+                                <option>£/L</option>
+                                <option>p/L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="component-demo">
+                        <label>Mileage with Suffix</label>
+                        <div class="input-suffix">
+                            <input type="number" placeholder="45320">
+                            <span>km</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Push Buttons -->
+                <div class="component-group">
+                    <h3>Push Buttons (Toggle)</h3>
+                    <div class="component-demo">
+                        <div class="push-buttons">
+                            <button class="push-btn is-active">SP95E10</button>
+                            <button class="push-btn">SP98</button>
+                            <button class="push-btn">Diesel</button>
+                            <button class="push-btn is-active">E85</button>
+                            <button class="push-btn">GPL</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Radio Buttons -->
+                <div class="component-group">
+                    <h3>Radio Options</h3>
+                    <div class="radio-option">
+                        <input type="radio" id="light-radio1" name="light-radio" checked>
+                        <label for="light-radio1">Peugeot 308</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="light-radio2" name="light-radio">
+                        <label for="light-radio2">Tesla Model 3</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="light-radio3" name="light-radio">
+                        <label for="light-radio3">Ford Focus</label>
+                    </div>
+                </div>
+
+                <!-- Cards -->
+                <div class="component-group">
+                    <h3>Item Cards</h3>
+                    <div class="item-card">
+                        <h3>Peugeot 308</h3>
+                        <p>Brand: Peugeot</p>
+                        <div class="item-meta">
+                            <span>Last mileage: 45,320 km</span>
+                            <span>Fuels: SP95E10, Diesel</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collapsible Panels -->
+                <div class="component-group">
+                    <h3>Collapsible Vehicle Panels</h3>
+                    <div class="vehicles-list">
+                        <div class="vehicle-panel expanded" id="sd-light-panel-1">
+                            <button class="vehicle-panel-header" type="button" onclick="sdTogglePanel('sd-light-panel-1')">
+                                <span class="vehicle-name">Peugeot 308</span>
+                                <span class="expand-arrow">⮟</span>
+                            </button>
+                            <div class="vehicle-panel-content">
+                                <p class="text-muted" style="margin:0">Refill form expanded here...</p>
+                            </div>
+                        </div>
+                        <div class="vehicle-panel" id="sd-light-panel-2">
+                            <button class="vehicle-panel-header" type="button" onclick="sdTogglePanel('sd-light-panel-2')">
+                                <span class="vehicle-name">Renault Scenic</span>
+                                <span class="expand-arrow">➤</span>
+                            </button>
+                            <div class="vehicle-panel-content hidden">
+                                <p class="text-muted" style="margin:0">Refill form expanded here...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Burger Menu -->
+                <div class="component-group">
+                    <h3>Burger Menu Icon</h3>
+                    <div class="component-demo">
+                        <button class="burger-btn" style="position: static;">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Messages -->
+                <div class="component-group">
+                    <h3>Status Messages</h3>
+                    <div class="status-message info">
+                        <strong>Info:</strong> This is an informational message.
+                    </div>
+                    <div class="status-message success">
+                        <strong>Success:</strong> Operation completed successfully!
+                    </div>
+                    <div class="status-message warning">
+                        <strong>Warning:</strong> Please review this action.
+                    </div>
+                    <div class="status-message error">
+                        <strong>Error:</strong> Something went wrong.
+                    </div>
+                </div>
+
+                <!-- Info Grid -->
+                <div class="component-group">
+                    <h3>Info Grid</h3>
+                    <div class="component-demo">
+                        <dl class="info-grid">
+                            <dt>First usage:</dt>
+                            <dd>15/01/2025 14:30</dd>
+                            <dt>Last usage:</dt>
+                            <dd>05/03/2026 09:15</dd>
+                            <dt>Total refills:</dt>
+                            <dd>23 times</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DARK THEME -->
+            <div class="theme-panel dark">
+                <h2 class="theme-title">🌙 Dark Theme</h2>
+
+                <!-- Buttons -->
+                <div class="component-group">
+                    <h3>Action Buttons</h3>
+                    <div class="component-demo">
+                        <div class="button-row">
+                            <button class="btn btn-ok">OK</button>
+                            <button class="btn btn-cancel">Cancel</button>
+                            <button class="btn btn-danger">Delete</button>
+                        </div>
+                    </div>
+                    <div class="component-demo">
+                        <button class="btn btn-primary" style="width: 100%;">Primary Action</button>
+                    </div>
+                    <div class="component-demo">
+                        <button class="btn btn-secondary" style="width: 100%;">Secondary Action</button>
+                    </div>
+                    <div class="component-demo">
+                        <button class="btn btn-primary" style="width: 100%;" disabled>Disabled Action</button>
+                    </div>
+                    <div class="component-demo">
+                        <button class="btn btn-link">Link Button</button>
+                    </div>
+                </div>
+
+                <!-- Text Inputs -->
+                <div class="component-group">
+                    <h3>Text Inputs</h3>
+                    <div class="component-demo">
+                        <label for="dark-text">Text Input</label>
+                        <input type="text" id="dark-text" placeholder="Enter text...">
+                    </div>
+                    <div class="component-demo">
+                        <label for="dark-email">Email Input</label>
+                        <input type="email" id="dark-email" placeholder="email@example.com">
+                    </div>
+                    <div class="component-demo">
+                        <label for="dark-textarea">Text Area</label>
+                        <textarea id="dark-textarea" placeholder="Enter longer text..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Number & Date Inputs -->
+                <div class="component-group">
+                    <h3>Number & Date Inputs</h3>
+                    <div class="component-demo">
+                        <label for="dark-number">Number Input (Float)</label>
+                        <input type="number" id="dark-number" step="0.01" value="1.839" placeholder="0.00">
+                    </div>
+                    <div class="component-demo">
+                        <label for="dark-datetime">Date Time Picker</label>
+                        <input type="datetime-local" id="dark-datetime" value="2026-03-07T12:30">
+                    </div>
+                    <div class="component-demo">
+                        <label for="dark-date">Date Picker</label>
+                        <input type="date" id="dark-date" value="2026-03-07">
+                    </div>
+                </div>
+
+                <!-- Dropdowns -->
+                <div class="component-group">
+                    <h3>Dropdown Lists (Select)</h3>
+                    <div class="component-demo">
+                        <label for="dark-vehicle">Vehicle Select</label>
+                        <select id="dark-vehicle">
+                            <option selected>Peugeot 308</option>
+                            <option>Tesla Model 3</option>
+                            <option>Ford Focus</option>
+                        </select>
+                    </div>
+                    <div class="component-demo">
+                        <label for="dark-fuel">Fuel Type Select</label>
+                        <select id="dark-fuel">
+                            <option selected>SP95E10</option>
+                            <option>SP98</option>
+                            <option>Diesel</option>
+                            <option>E85</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Input Groups -->
+                <div class="component-group">
+                    <h3>Input Groups</h3>
+                    <div class="component-demo">
+                        <label>Price with Unit</label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" placeholder="1.839">
+                            <select>
+                                <option>€/L</option>
+                                <option>$/Gal</option>
+                                <option>£/L</option>
+                                <option>p/L</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="component-demo">
+                        <label>Mileage with Suffix</label>
+                        <div class="input-suffix">
+                            <input type="number" placeholder="45320">
+                            <span>km</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Push Buttons -->
+                <div class="component-group">
+                    <h3>Push Buttons (Toggle)</h3>
+                    <div class="component-demo">
+                        <div class="push-buttons">
+                            <button class="push-btn is-active">SP95E10</button>
+                            <button class="push-btn">SP98</button>
+                            <button class="push-btn">Diesel</button>
+                            <button class="push-btn is-active">E85</button>
+                            <button class="push-btn">GPL</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Radio Buttons -->
+                <div class="component-group">
+                    <h3>Radio Options</h3>
+                    <div class="radio-option">
+                        <input type="radio" id="dark-radio1" name="dark-radio" checked>
+                        <label for="dark-radio1">Peugeot 308</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="dark-radio2" name="dark-radio">
+                        <label for="dark-radio2">Tesla Model 3</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="dark-radio3" name="dark-radio">
+                        <label for="dark-radio3">Ford Focus</label>
+                    </div>
+                </div>
+
+                <!-- Cards -->
+                <div class="component-group">
+                    <h3>Item Cards</h3>
+                    <div class="item-card">
+                        <h3>Peugeot 308</h3>
+                        <p>Brand: Peugeot</p>
+                        <div class="item-meta">
+                            <span>Last mileage: 45,320 km</span>
+                            <span>Fuels: SP95E10, Diesel</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collapsible Panels -->
+                <div class="component-group">
+                    <h3>Collapsible Vehicle Panels</h3>
+                    <div class="vehicles-list">
+                        <div class="vehicle-panel expanded" id="sd-dark-panel-1">
+                            <button class="vehicle-panel-header" type="button" onclick="sdTogglePanel('sd-dark-panel-1')">
+                                <span class="vehicle-name">Peugeot 308</span>
+                                <span class="expand-arrow">⮟</span>
+                            </button>
+                            <div class="vehicle-panel-content">
+                                <p class="text-muted" style="margin:0">Refill form expanded here...</p>
+                            </div>
+                        </div>
+                        <div class="vehicle-panel" id="sd-dark-panel-2">
+                            <button class="vehicle-panel-header" type="button" onclick="sdTogglePanel('sd-dark-panel-2')">
+                                <span class="vehicle-name">Renault Scenic</span>
+                                <span class="expand-arrow">➤</span>
+                            </button>
+                            <div class="vehicle-panel-content hidden">
+                                <p class="text-muted" style="margin:0">Refill form expanded here...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Burger Menu -->
+                <div class="component-group">
+                    <h3>Burger Menu Icon</h3>
+                    <div class="component-demo">
+                        <button class="burger-btn" style="position: static;">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Messages -->
+                <div class="component-group">
+                    <h3>Status Messages</h3>
+                    <div class="status-message info">
+                        <strong>Info:</strong> This is an informational message.
+                    </div>
+                    <div class="status-message success">
+                        <strong>Success:</strong> Operation completed successfully!
+                    </div>
+                    <div class="status-message warning">
+                        <strong>Warning:</strong> Please review this action.
+                    </div>
+                    <div class="status-message error">
+                        <strong>Error:</strong> Something went wrong.
+                    </div>
+                </div>
+
+                <!-- Info Grid -->
+                <div class="component-group">
+                    <h3>Info Grid</h3>
+                    <div class="component-demo">
+                        <dl class="info-grid">
+                            <dt>First usage:</dt>
+                            <dd>15/01/2025 14:30</dd>
+                            <dt>Last usage:</dt>
+                            <dd>05/03/2026 09:15</dd>
+                            <dt>Total refills:</dt>
+                            <dd>23 times</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Typography Section -->
+        <div class="content-section" style="margin-bottom: 30px;">
+            <h2>Typography</h2>
+            <h1>Heading 1</h1>
+            <h2>Heading 2</h2>
+            <h3>Heading 3</h3>
+            <p>Regular paragraph text. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+            <p class="text-muted">Muted text for less important information.</p>
+        </div>
+
+        <!-- Collapsible Panel Full Demo -->
+        <div class="content-section">
+            <h2>Collapsible Vehicle Panel — Full Example</h2>
+            <p class="text-muted">Click a vehicle name or the arrow to expand/collapse its refill form. Only one panel can be open at a time.</p>
+            <div class="vehicles-list" style="margin-top: 16px;">
+
+                <div class="vehicle-panel expanded" id="sd-full-panel-1">
+                    <button class="vehicle-panel-header" type="button" onclick="sdTogglePanel('sd-full-panel-1')">
+                        <span class="vehicle-name">Peugeot 108</span>
+                        <span class="expand-arrow">⮟</span>
+                    </button>
+                    <div class="vehicle-panel-content">
+                        <form onsubmit="return false;">
+                            <div class="form-group">
+                                <label>Gas Station</label>
+                                <button type="button" class="btn btn-link" style="padding-left:0">Choose a station</button>
+                                <p class="text-muted" style="margin:4px 0 0">No station selected</p>
+                            </div>
+                            <div class="form-group">
+                                <label>Date &amp; Time</label>
+                                <input type="datetime-local" value="2026-03-10T12:30">
+                            </div>
+                            <div class="form-group">
+                                <label>Fuel Type</label>
+                                <select>
+                                    <option selected>SP95E5</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Unit Price</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.001" placeholder="1.839">
+                                    <select style="flex: 0 0 90px;"><option>€/L</option></select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Quantity</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.01" placeholder="45.5">
+                                    <select style="flex: 0 0 90px;"><option>Liter</option></select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Total Price</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.01" placeholder="83.67">
+                                    <select style="flex: 0 0 90px;"><option>€</option></select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Mileage</label>
+                                <div class="input-suffix">
+                                    <input type="number" placeholder="50320">
+                                    <span>km</span>
+                                </div>
+                            </div>
+                            <div class="button-row">
+                                <button type="button" class="btn btn-cancel" onclick="sdTogglePanel('sd-full-panel-1')">Cancel</button>
+                                <button type="submit" class="btn btn-ok">OK</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="vehicle-panel" id="sd-full-panel-2">
+                    <button class="vehicle-panel-header" type="button" onclick="sdTogglePanel('sd-full-panel-2')">
+                        <span class="vehicle-name">Renault Scenic</span>
+                        <span class="expand-arrow">➤</span>
+                    </button>
+                    <div class="vehicle-panel-content hidden">
+                        <form onsubmit="return false;">
+                            <div class="form-group">
+                                <label>Gas Station</label>
+                                <button type="button" class="btn btn-link" style="padding-left:0">Choose a station</button>
+                                <p class="text-muted" style="margin:4px 0 0">No station selected</p>
+                            </div>
+                            <div class="form-group">
+                                <label>Date &amp; Time</label>
+                                <input type="datetime-local" value="2026-03-10T12:30">
+                            </div>
+                            <div class="form-group">
+                                <label>Fuel Type</label>
+                                <select>
+                                    <option selected>Diesel</option>
+                                    <option>Premium Diesel</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Unit Price</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.001" placeholder="1.689">
+                                    <select style="flex: 0 0 90px;"><option>€/L</option></select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Quantity</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.01" placeholder="52.0">
+                                    <select style="flex: 0 0 90px;"><option>Liter</option></select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Total Price</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.01" placeholder="87.83">
+                                    <select style="flex: 0 0 90px;"><option>€</option></select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Mileage</label>
+                                <div class="input-suffix">
+                                    <input type="number" placeholder="103500">
+                                    <span>km</span>
+                                </div>
+                            </div>
+                            <div class="button-row">
+                                <button type="button" class="btn btn-cancel" onclick="sdTogglePanel('sd-full-panel-2')">Cancel</button>
+                                <button type="submit" class="btn btn-ok">OK</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Map Placeholder -->
+        <div class="content-section">
+            <h2>Map Container</h2>
+            <div class="map-container">
+                <p>Map Placeholder (Leaflet OpenStreetMap)<br>Interactive map component</p>
+            </div>
+        </div>
+
+        <!-- QR Code -->
+        <div class="content-section">
+            <h2>QR Code Container</h2>
+            <div class="qr-container">
+                <div class="qr-code">
+                    <p>QR Code<br>200x200px</p>
+                </div>
+                <p class="text-muted mt-2">Click to view fullscreen</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle push buttons
+        document.querySelectorAll('.push-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.classList.toggle('is-active');
+            });
+        });
+
+        // Collapsible panel toggle for system-design demo
+        function sdTogglePanel(id) {
+            const panel = document.getElementById(id);
+            if (!panel) return;
+            const isExpanded = panel.classList.contains('expanded');
+
+            // Collapse all sibling panels in the same vehicles-list
+            const list = panel.closest('.vehicles-list');
+            if (list) {
+                list.querySelectorAll('.vehicle-panel.expanded').forEach(function(p) {
+                    if (p !== panel) {
+                        p.classList.remove('expanded');
+                        const c = p.querySelector('.vehicle-panel-content');
+                        if (c) c.classList.add('hidden');
+                        const a = p.querySelector('.expand-arrow');
+                        if (a) a.textContent = '\u27A4';
+                    }
+                });
+            }
+
+            const arrow = panel.querySelector('.expand-arrow');
+            if (isExpanded) {
+                panel.classList.remove('expanded');
+                const content = panel.querySelector('.vehicle-panel-content');
+                if (content) content.classList.add('hidden');
+                if (arrow) arrow.textContent = '\u27A4';
+            } else {
+                panel.classList.add('expanded');
+                const content = panel.querySelector('.vehicle-panel-content');
+                if (content) content.classList.remove('hidden');
+                if (arrow) arrow.textContent = '\u2B9F';
+            }
+        }
+    </script>
+</body>
+</html>

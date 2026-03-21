@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refill History - GasLog</title>
+    <link rel="icon" type="image/png" href="../app/gaslog.png">
+    <link rel="stylesheet" href="system-design.css">
+</head>
+<body>
+    <button class="burger-btn" onclick="toggleNav()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <nav class="nav-sidebar" id="navSidebar">
+        <div class="nav-sidebar-header">
+            <h2>GasLog</h2>
+            <button class="nav-close" onclick="toggleNav()">x</button>
+        </div>
+        <div class="nav-menu">
+            <a href="index.html">Refill</a>
+            <a href="vehicles.html" class="active">Vehicles</a>
+            <a href="stations.html">Stations</a>
+            <a href="login.html">Login</a>
+            <a href="settings.html">Settings</a>
+        </div>
+    </nav>
+    <div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
+
+    <div class="app-container">
+        <div class="page-header">
+            <h1 id="vehicleNameTitle">Vehicle Refill History</h1>
+            <p id="refillHistorySubtitle">All refills for this vehicle</p>
+        </div>
+
+        <section class="content-section">
+            <h2>Refills</h2>
+            <div class="button-row">
+                <button type="button" class="btn btn-secondary" onclick="window.history.back()">Back</button>
+                <button type="button" class="btn btn-primary" id="showGraphicsBtn">Show graphics</button>
+            </div>
+            <div class="item-list refill-history-block">
+                <label>Refill history <span id="refillHistoryLoading" class="hidden" aria-hidden="true">⌛</span></label>
+                <div class="item-card">
+                    <div class="stats-table-wrap">
+                        <table class="stats-table table-data-mono">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Total price</th>
+                                    <th>Quantity</th>
+                                    <th>Fuel price</th>
+                                    <th>Fuel type</th>
+                                    <th>Mileage</th>
+                                </tr>
+                            </thead>
+                            <tbody id="refillHistoryBody">
+                                <tr>
+                                    <td colspan="6" class="refill-history-empty">Loading refill history...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-row">
+                <button type="button" class="btn btn-secondary" onclick="window.history.back()">Back</button>
+                <button type="button" class="btn btn-primary" id="showGraphicsBtn">Show graphics</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/refill_history.js"></script>
+</body>
+</html>

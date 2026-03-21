@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Station Details - GasLog</title>
+    <link rel="icon" type="image/png" href="../app/gaslog.png">
+    <link rel="stylesheet" href="system-design.css">
+</head>
+<body>
+    <!-- Burger Menu Button -->
+    <button class="burger-btn" onclick="toggleNav()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Navigation Sidebar -->
+    <nav class="nav-sidebar" id="navSidebar">
+        <div class="nav-sidebar-header">
+            <h2>GasLog</h2>
+            <button class="nav-close" onclick="toggleNav()">×</button>
+        </div>
+        <div class="nav-menu">
+            <a href="index.html">Refill</a>
+            <a href="vehicles.html">Vehicles</a>
+            <a href="stations.html" class="active">Stations</a>
+            <a href="login.html">Login</a>
+            <a href="settings.html">Settings</a>
+        </div>
+    </nav>
+    <div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <div class="page-header">
+            <h1>Station Details</h1>
+            <p>View and edit station information</p>
+        </div>
+
+        <!-- Station Details -->
+        <section class="content-section">
+            <h2>Station Information</h2>
+            
+            <div class="form-group">
+                <label for="stationName">Station Name</label>
+                <input type="text" id="stationName" value="Total - Avenue des Champs" maxlength="32">
+            </div>
+
+            <div class="form-group">
+                <label>Location</label>
+                <div class="map-container">
+                    <p>Map (Leaflet OpenStreetMap)<br>Station location: 48.8566° N, 2.3522° E<br>Drag pin to adjust location</p>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Usage Information</label>
+                <dl class="info-grid">
+                    <dt>First usage:</dt>
+                    <dd>15/01/2025 14:30</dd>
+                    
+                    <dt>Last usage:</dt>
+                    <dd>05/03/2026 09:15</dd>
+                    
+                    <dt>Total refills:</dt>
+                    <dd>23 times</dd>
+                </dl>
+            </div>
+
+            <div class="button-row">
+                <button type="button" class="btn btn-cancel" onclick="window.location.href='stations.html'">Cancel</button>
+                <button type="button" class="btn btn-ok" onclick="window.location.href='stations.html'">OK</button>
+            </div>
+        </section>
+
+        <!-- Danger Zone -->
+        <section class="content-section">
+            <h2 style="color: var(--danger-bg);">Danger Zone</h2>
+            
+            <p class="text-muted mb-2">Deleting this station will remove it from your list. Refill history will remain intact.</p>
+            
+            <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete this station</button>
+        </section>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/station_details.js"></script>
+</body>
+</html>

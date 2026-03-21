@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - GasLog</title>
+    <link rel="icon" type="image/png" href="../app/gaslog.png">
+    <link rel="stylesheet" href="system-design.css">
+</head>
+<body>
+    <!-- Burger Menu Button -->
+    <button class="burger-btn" onclick="toggleNav()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Navigation Sidebar -->
+    <nav class="nav-sidebar" id="navSidebar">
+        <div class="nav-sidebar-header">
+            <h2>GasLog</h2>
+            <button class="nav-close" onclick="toggleNav()">×</button>
+        </div>
+        <div class="nav-menu">
+            <a href="index.html">Refill</a>
+            <a href="vehicles.html">Vehicles</a>
+            <a href="stations.html">Stations</a>
+            <a href="login.html" class="active">Login</a>
+            <a href="settings.html">Settings</a>
+        </div>
+    </nav>
+    <div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <div class="page-header">
+            <h1>Login</h1>
+            <p>Create an account to sync your data</p>
+        </div>
+
+        <!-- Login Section (for non-logged users) -->
+        <section class="content-section" id="loginSection">
+            <h2>Create or Login to Account</h2>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="userEmail">Email Address</label>
+                    <input type="email" id="userEmail" placeholder="your.email@example.com" maxlength="255" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="userName">Name</label>
+                    <input type="text" id="userName" placeholder="Your name" maxlength="255">
+                </div>
+
+                <div class="form-group">
+                    <label>By continuing, you agree to the <a href="terms.html" target="_blank">Terms of Service and Privacy Policy</a></label>
+                    <button type="button" class="btn btn-primary" style="width: 100%;" id="sendCodeBtn" onclick="sendAuthCode()" disabled>Send authentication code</button>
+                </div>
+
+                <div class="form-group" id="authCodeGroup" style="display: none;">
+                    <label for="authCode">Authentication Code</label>
+                    <input type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" id="authCode" placeholder="Enter code" autocomplete="off">
+                    <p class="text-muted mt-1">Check your email for the authentication code</p>
+                </div>
+
+                <div class="button-row" id="loginButtons" style="display: none;">
+                    <button type="button" class="btn btn-cancel" onclick="window.location.href='index.html'">Cancel</button>
+                    <button type="submit" class="btn btn-ok" id="okBtn" disabled>OK</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Account Section (for already registered users) -->
+        <section class="content-section" id="accountSection" style="display: none;">
+            <h2>Your Account</h2>
+            
+            <form id="accountForm">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <p id="userEmailDisplay" style="font-weight: 500; margin-top: 0.5rem;">-</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="accountUserName">Name <i>you can change it from here :</i></label> 
+                    <input type="text" id="accountUserName" placeholder="Your name" maxlength="255">
+                </div>
+
+                <div class="button-row">
+                    <button type="button" class="btn btn-cancel" onclick="window.location.href='index.html'">Cancel</button>
+                    <button type="button" class="btn btn-ok" id="updateNameBtn" disabled>OK</button>
+                </div>
+            </form>
+
+            <div class="form-group" style="margin-top: 2rem;">
+                <h3>Share Account</h3>
+                <p class="text-muted">Scan this QR code with another device to pair the application to this account</p>
+                <div id="qrcode" style="text-align: center; margin: 1rem 0; cursor: pointer;" onclick="showQRFullscreen()"></div>
+            </div>
+
+            <div class="form-group">
+                <button type="button" class="btn btn-primary" style="width: 100%;" id="scanQRBtn">Scan QR Code</button>
+            </div>
+
+            <div class="form-group" style="margin-top: 2rem;">
+                <button type="button" class="btn btn-danger" style="width: 100%;" id="signOutBtn">Sign Out</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="js/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gas Map</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-dark:    #1a1a2e;
+            --bg-panel:   #16213e;
+            --accent:     #e94560;
+            --accent-dim: #c73652;
+            --blue:       #4dabf7;
+            --text:       #e8e8f0;
+            --muted:      #8888aa;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        /* ── Header ─────────────────────────────────────────── */
+        #header {
+            position: relative;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: var(--bg-panel);
+            box-shadow: 0 2px 10px rgba(0,0,0,.5);
+        }
+
+        #header h1 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--accent);
+            white-space: nowrap;
+        }
+
+        #status {
+            flex: 1;
+            font-size: 0.8rem;
+            color: var(--muted);
+            text-align: right;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #locate-btn {
+            flex-shrink: 0;
+            background: var(--accent);
+            border: none;
+            color: #fff;
+            padding: 6px 13px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: 600;
+            touch-action: manipulation;
+            transition: background 0.15s;
+        }
+        #locate-btn:hover  { background: var(--accent-dim); }
+        #locate-btn:active { background: #a02840; }
+
+        /* ── Map container ───────────────────────────────────── */
+        #map-wrap {
+            position: relative;
+            height: calc(100% - 46px);  /* full height minus header */
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background: #0d1117;
+        }
+
+        /* ── Loading overlay ─────────────────────────────────── */
+        #loading {
+            position: absolute;
+            inset: 0;
+            background: rgba(26, 26, 46, 0.88);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            z-index: 9999;
+        }
+        #loading.hidden { display: none; }
+
+        .spinner {
+            width: 42px;
+            height: 42px;
+            border: 4px solid rgba(255,255,255,0.12);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        #loading-text { font-size: 0.9rem; color: var(--muted); }
+
+        /* ── Floating hint ───────────────────────────────────── */
+        #hint {
+            position: absolute;
+            bottom: 22px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(22, 33, 62, 0.85);
+            border: 1px solid rgba(233, 69, 96, 0.4);
+            backdrop-filter: blur(4px);
+            border-radius: 20px;
+            padding: 6px 16px;
+            font-size: 0.75rem;
+            color: var(--muted);
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
+            transition: opacity 0.4s;
+        }
+        #hint.hidden { opacity: 0; }
+
+        /* ── Station count badge ─────────────────────────────── */
+        #badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(22, 33, 62, 0.9);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 0.78rem;
+            color: var(--text);
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+            pointer-events: none;
+        }
+
+        /* ── Leaflet popup tweaks ────────────────────────────── */
+        .leaflet-popup-content-wrapper {
+            background: var(--bg-panel);
+            color: var(--text);
+            border-radius: 8px;
+            box-shadow: 0 4px 14px rgba(0,0,0,.5);
+        }
+        .leaflet-popup-tip { background: var(--bg-panel); }
+        .leaflet-popup-content { font-size: 0.85rem; line-height: 1.5; }
+        .leaflet-popup-content b { color: var(--accent); }
+        .leaflet-popup-content .tag { color: var(--muted); font-size: 0.75rem; }
+
+        .leaflet-control-attribution a { color: var(--accent) !important; }
+        .leaflet-control-attribution { background: rgba(22,33,62,0.75) !important; color: var(--muted) !important; }
+        .leaflet-control-zoom a { background: var(--bg-panel) !important; color: var(--text) !important; border-color: #334 !important; }
+        .leaflet-control-zoom a:hover { background: #334 !important; }
+    </style>
+</head>
+<body>
+
+<div id="header">
+    <h1>⛽ Gas Map</h1>
+    <button id="locate-btn" type="button">📍 Re-center</button>
+    <span id="status">Waiting for GPS…</span>
+</div>
+
+<div id="map-wrap">
+    <div id="map"></div>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <div id="loading-text">Getting your location…</div>
+    </div>
+
+    <div id="badge">⛽ — stations</div>
+    <div id="hint">Drag to pan · Scroll or pinch to zoom</div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+(function () {
+    "use strict";
+
+    /* ── State ──────────────────────────────────────────────── */
+    let map = null;
+    let userMarker = null;
+    let accuracyCircle = null;
+    let stationsGroup = null;
+    let fetchController = null;   // AbortController for in-flight station requests
+    const API_BASE_URL = "http://localhost:8000/app/api.php";
+    const SEARCH_RADIUS_METERS = 1000;
+
+    /* ── DOM refs ───────────────────────────────────────────── */
+    const $loading     = document.getElementById("loading");
+    const $loadingText = document.getElementById("loading-text");
+    const $status      = document.getElementById("status");
+    const $badge       = document.getElementById("badge");
+    const $hint        = document.getElementById("hint");
+    const $locateBtn   = document.getElementById("locate-btn");
+
+    $locateBtn.addEventListener("click", locateUser);
+
+    /* ── Custom icons ───────────────────────────────────────── */
+    const userIcon = L.divIcon({
+        className: "",
+        html: `<div style="
+            width:18px;height:18px;
+            background:var(--blue,#4dabf7);
+            border:3px solid #fff;
+            border-radius:50%;
+            box-shadow:0 0 0 4px rgba(77,171,247,.3),0 2px 6px rgba(0,0,0,.4);
+        "></div>`,
+        iconSize:   [18, 18],
+        iconAnchor: [9, 9]
+    });
+
+    const gasIcon = L.divIcon({
+        className: "",
+        html: `<div style="
+            width:30px;height:30px;
+            background:#e94560;
+            border:2px solid rgba(255,255,255,.9);
+            border-radius:7px;
+            display:flex;align-items:center;justify-content:center;
+            font-size:17px;line-height:1;
+            box-shadow:0 3px 8px rgba(0,0,0,.55);
+            cursor:pointer;
+        ">⛽</div>`,
+        iconSize:   [30, 30],
+        iconAnchor: [15, 15],
+        popupAnchor:[0, -17]
+    });
+
+    /* ── Map init ───────────────────────────────────────────── */
+    function buildMap(lat, lng) {
+        map = L.map("map", {
+            center:             [lat, lng],
+            zoom:               16,           // ~1 km view at zoom 16
+            zoomControl:        true,
+            tap:                true,         // Leaflet mobile-tap support
+            tapTolerance:       15,
+            touchZoom:          true,         // pinch-to-zoom
+            scrollWheelZoom:    true,
+            doubleClickZoom:    true,
+            dragging:           true,
+        });
+
+        // OSM tile layer
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        stationsGroup = L.layerGroup().addTo(map);
+
+        // Re-fetch stations whenever the viewport settles
+        map.on("moveend", onMapMoveEnd);
+    }
+
+    /* ── User location marker + accuracy ring ───────────────── */
+    function placeUserMarker(lat, lng, accuracy) {
+        if (userMarker) {
+            userMarker.setLatLng([lat, lng]);
+        } else {
+            userMarker = L.marker([lat, lng], { icon: userIcon, zIndexOffset: 2000 })
+                .addTo(map)
+                .bindPopup("<b>You are here</b>");
+        }
+
+        const radius = Math.min(accuracy || 60, 500);   // cap display at 500 m
+        if (accuracyCircle) {
+            accuracyCircle.setLatLng([lat, lng]).setRadius(radius);
+        } else {
+            accuracyCircle = L.circle([lat, lng], {
+                radius:      radius,
+                color:       "#4dabf7",
+                weight:      1,
+                dashArray:   "5 4",
+                fillColor:   "#4dabf7",
+                fillOpacity: 0.07
+            }).addTo(map);
+        }
+    }
+
+    /* ── Station API query ──────────────────────────────────── */
+    function onMapMoveEnd() {
+        const c = map.getCenter();
+        fetchStations(c.lat, c.lng);
+    }
+
+    function fetchStations(lat, lng) {
+        // Cancel any previous in-flight request
+        if (fetchController) fetchController.abort();
+        fetchController = new AbortController();
+
+        const params = new URLSearchParams({
+            o: "station",
+            a: "getnearest",
+            lat: String(lat),
+            long: String(lng),
+            radius: String(SEARCH_RADIUS_METERS)
+        });
+
+        setStatus("Fetching stations…");
+
+        fetch(`${API_BASE_URL}?${params.toString()}`, {
+            method: "GET",
+            signal:  fetchController.signal
+        })
+        .then(r => {
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            return r.json();
+        })
+        .then(data => {
+            if (!data || typeof data.success !== "boolean") {
+                throw new Error("Invalid API response format");
+            }
+
+            if (data.success === false) {
+                stationsGroup.clearLayers();
+                $badge.textContent = "⛽ 0 station in 1000 m";
+                setStatus(data.message || "Could not load stations");
+                return;
+            }
+
+            if (!Array.isArray(data.stations)) {
+                throw new Error("Invalid API response format");
+            }
+            renderStations(data.stations);
+        })
+        .catch(err => {
+            if (err.name === "AbortError") return;   // intentional cancel
+            console.warn("Station API error:", err);
+            setStatus("Could not load stations");
+        });
+    }
+
+    /* ── Render gas station markers ─────────────────────────── */
+    function renderStations(stations) {
+        stationsGroup.clearLayers();
+
+        stations.forEach(st => {
+            const lat = Number(st.lat);
+            const lng = Number(st.long);
+            if (lat == null || lng == null) return;
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+            const name = st.name ? escHtml(st.name) : "Gas Station";
+
+            const addressParts = [
+                st.house_number,
+                st.street,
+                st.post_code,
+                st.city,
+                st.country
+            ].filter(Boolean);
+
+            const addressLine = addressParts.length
+                ? `<br><span class="tag">📍 ${escHtml(addressParts.join(" "))}</span>`
+                : "";
+
+            const distanceLine = Number.isFinite(Number(st.distance))
+                ? `<br><span class="tag">📏 ${Math.round(Number(st.distance))} m</span>`
+                : "";
+
+            const popup = `<b>${name}</b>${addressLine}${distanceLine}`;
+
+            L.marker([lat, lng], { icon: gasIcon })
+                .addTo(stationsGroup)
+                .bindPopup(popup, { maxWidth: 220 });
+        });
+
+        const n = stations.length;
+        $badge.textContent = `⛽ ${n} station${n !== 1 ? "s" : ""} in ${SEARCH_RADIUS_METERS} m`;
+        setStatus(`${n} station${n !== 1 ? "s" : ""} found`);
+    }
+
+    function escHtml(str) {
+        return str.replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c]);
+    }
+
+    /* ── Geolocation ────────────────────────────────────────── */
+    function locateUser() {
+        showLoading("Getting your location…");
+        setStatus("Locating…");
+
+        if (!navigator.geolocation) {
+            hideLoading();
+            setStatus("Geolocation not supported");
+            alert("Your browser does not support geolocation.");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                hideLoading();
+                dismissHintSoon();
+                const { latitude, longitude, accuracy } = pos.coords;
+
+                if (!map) {
+                    buildMap(latitude, longitude);
+                } else {
+                    map.setView([latitude, longitude], 16, { animate: true });
+                }
+
+                placeUserMarker(latitude, longitude, accuracy);
+                fetchStations(latitude, longitude);
+                setStatus("Location acquired");
+            },
+            err => {
+                hideLoading();
+                const msgs = {
+                    1: "GPS access denied — enable location in browser settings.",
+                    2: "Position unavailable.",
+                    3: "Location request timed out."
+                };
+                const msg = msgs[err.code] || "Geolocation error.";
+                setStatus(msg);
+
+                // Show map anyway using a fallback (Paris)
+                if (!map) {
+                    buildMap(48.8566, 2.3522);
+                    fetchStations(48.8566, 2.3522);
+                    setStatus("GPS unavailable — showing Paris demo");
+                }
+            },
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
+        );
+    }
+
+    /* ── UI helpers ─────────────────────────────────────────── */
+    function showLoading(msg) {
+        $loadingText.textContent = msg || "Loading…";
+        $loading.classList.remove("hidden");
+    }
+
+    function hideLoading() {
+        $loading.classList.add("hidden");
+    }
+
+    function setStatus(msg) {
+        $status.textContent = msg;
+    }
+
+    function dismissHintSoon() {
+        setTimeout(() => $hint.classList.add("hidden"), 4000);
+    }
+
+    /* ── Boot ───────────────────────────────────────────────── */
+    locateUser();
+})();
+</script>
+</body>
+</html>

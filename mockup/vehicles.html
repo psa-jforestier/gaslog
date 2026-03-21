@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicles - GasLog</title>
+    <link rel="icon" type="image/png" href="../app/gaslog.png">
+    <link rel="stylesheet" href="system-design.css">
+</head>
+<body>
+    <!-- Burger Menu Button -->
+    <button class="burger-btn" onclick="toggleNav()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Navigation Sidebar -->
+    <nav class="nav-sidebar" id="navSidebar">
+        <div class="nav-sidebar-header">
+            <h2>GasLog</h2>
+            <button class="nav-close" onclick="toggleNav()">×</button>
+        </div>
+        <div class="nav-menu">
+            <a href="index.html">Refill</a>
+            <a href="vehicles.html" class="active">Vehicles</a>
+            <a href="stations.html">Stations</a>
+            <a href="login.html">Login</a>
+            <a href="settings.html">Settings</a>
+        </div>
+    </nav>
+    <div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <div class="page-header">
+            <h1>My Vehicles</h1>
+            <p>Manage your vehicles</p>
+        </div>
+
+        <!-- Vehicles List -->
+        <section class="content-section">
+            <h2>Your Vehicles <span id="vehiclesLoading" class="hidden" aria-hidden="true">⌛</span></h2>
+            
+            <div class="item-list" id="vehicleList">
+                <!-- Vehicles will be loaded dynamically -->
+            </div>
+
+            <div class="button-row">
+                <button class="btn btn-primary" onclick="window.location.href='new_vehicle.html'">New Vehicle</button>
+                <button class="btn btn-secondary" onclick="window.location.href='index.html'">Done</button>
+            </div>
+        </section>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/vehicles.js"></script>
+</body>
+</html>

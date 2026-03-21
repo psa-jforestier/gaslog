@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Vehicle - GasLog</title>
+    <link rel="icon" type="image/png" href="../app/gaslog.png">
+    <link rel="stylesheet" href="system-design.css">
+</head>
+<body>
+    <!-- Burger Menu Button -->
+    <button class="burger-btn" onclick="toggleNav()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Navigation Sidebar -->
+    <nav class="nav-sidebar" id="navSidebar">
+        <div class="nav-sidebar-header">
+            <h2>GasLog</h2>
+            <button class="nav-close" onclick="toggleNav()">×</button>
+        </div>
+        <div class="nav-menu">
+            <a href="index.html">Refill</a>
+            <a href="vehicles.html" class="active">Vehicles</a>
+            <a href="stations.html">Stations</a>
+            <a href="login.html">Login</a>
+            <a href="settings.html">Settings</a>
+        </div>
+    </nav>
+    <div class="nav-overlay" id="navOverlay" onclick="toggleNav()"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <div class="page-header">
+            <h1>Add New Vehicle</h1>
+            <p>Enter your vehicle details</p>
+        </div>
+
+        <!-- New Vehicle Form -->
+        <section class="content-section">
+            <h2>Vehicle Information</h2>
+            
+            <form id="newVehicleForm">
+                <div class="form-group">
+                    <label for="vehicleName">Vehicle Name</label>
+                    <input type="text" id="vehicleName" placeholder="e.g., Peugeot 308" maxlength="16" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicleBrand">Brand</label>
+                    <select id="vehicleBrand">
+                        <option value="">Select a brand</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="purchaseDate">Purchase Date</label>
+                    <input type="date" id="purchaseDate">
+                </div>
+
+                <div class="form-group">
+                    <label for="initialMileage">Initial Mileage</label>
+                    <div class="input-group">
+                        <input type="number" id="initialMileage" placeholder="0">
+                        <select id="distanceUnit">
+                            <option>km</option>
+                            <option>mi</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Available Fuels</label>
+                    <p class="text-muted mb-1">Select one or more fuel types</p>
+                    <div class="push-buttons" id="fuelButtons"></div>
+                </div>
+
+                <div class="button-row">
+                    <button type="button" class="btn btn-cancel" onclick="window.location.href='vehicles.html'">Cancel</button>
+                    <button type="submit" class="btn btn-ok">OK</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/new_vehicle.js"></script>
+</body>
+</html>
