@@ -1,4 +1,4 @@
-**GasLog is a gas logging website.**
+**GasLog is a gas / fuel logging website.**
 
 It allows users to track when he fills/refills/fuel/refuell up his/her car tak with fuel (gasoline, diesel).
 
