@@ -5,8 +5,25 @@
 
 include_once __DIR__.'/include.php';
 
-if (@$_REQUEST['confirm'] == '1') {
-    $db = Database::getInstance($CONFIG['db']['dsn'], $CONFIG['db']['dbuser'], $CONFIG['db']['dbpassword']);
+function isDbExists($dsn, $dbuser, $dbpassword) {
+
+    try {
+        $db = Database::getInstance($dsn, $dbuser, $dbpassword);
+        $db->query('SELECT 1 FROM user LIMIT 1');
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+if (@$_REQUEST['confirm'] == '1') 
+{
+    $to_create = !isDbExists($CONFIG['db']['dsn'], $CONFIG['db']['dbuser'], $CONFIG['db']['dbpassword']);
+    if ($to_create === false) {
+        echo 'Database already exists ! <a href="index.php">Go to the main screen</a>';
+        exit;
+    }
+    echo "Creating database...<br/>";
     $type = $CONFIG['db']['type'];
     $sqlScript = file_get_contents(__DIR__.'/../schema.'.$type.'.sql');
     $db->multipleQuery($sqlScript);
@@ -15,14 +32,8 @@ if (@$_REQUEST['confirm'] == '1') {
 }
 
 // Check if the database exists, if not create it
-$to_create = false;
-try {  
-    $db = Database::getInstance($CONFIG['db']['dsn'], $CONFIG['db']['dbuser'], $CONFIG['db']['dbpassword']);
-    $db->query('SELECT 1 FROM user LIMIT 1');
-    } catch (Exception $e) 
-    {
-        $to_create = true;
-    }
+$to_create = !isDbExists($CONFIG['db']['dsn'], $CONFIG['db']['dbuser'], $CONFIG['db']['dbpassword']);
+
 
 ?>
 <html>
