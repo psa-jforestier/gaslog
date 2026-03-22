@@ -4,7 +4,7 @@
  * See SPECS.md, __main screen__
  * 
  */
-
+die;
 include_once __DIR__.'/include.php';
 
 $db = Database::getInstance($CONFIG['db']['dsn'], $CONFIG['db']['dbuser'], $CONFIG['db']['dbpassword']);

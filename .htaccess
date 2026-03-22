@@ -1,0 +1,22 @@
+<IfModule mod_maxminddb.c>
+
+	MaxMindDBEnable On
+	MaxMindDBFile COUNTRY_DB /usr/share/GeoIP/GeoLite2-Country.mmdb
+	MaxMindDBEnv MM_COUNTRY_CODE COUNTRY_DB/country/iso_code
+
+	# block specific country :
+	# SetEnvIf MM_COUNTRY_CODE ^(RU|CN|IR|TR|VN|MY|SA) BlockCountry
+	# Deny from env=BlockCountry
+
+	# block all countries except some :
+	#SetEnvIf MM_COUNTRY_CODE ^(FR) AllowCountry
+	#Allow from env=AllowCountry
+	#Deny from all
+</IfModule>
+
+## No directory index
+Options -Indexes
+
+RewriteEngine On
+RewriteBase /
+
