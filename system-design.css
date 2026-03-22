@@ -386,7 +386,7 @@ textarea:focus {
 .item-card {
     border: 1px solid var(--panel-border);
     border-radius: 8px;
-    padding: 16px;
+    padding: 4px;
     cursor: pointer;
     transition: all 0.2s;
 }
@@ -428,12 +428,14 @@ textarea:focus {
     text-align: left;
     font-weight: 700;
     padding: 4px 4px;
+    vertical-align: top;
     border-bottom: 2px solid var(--panel-border);
     border-right: 1px solid var(--panel-border);
 }
 
 .stats-table tbody td {
     padding: 4px 4px;
+    vertical-align: top;
     border-bottom: 1px solid var(--panel-border);
     border-right: 1px solid var(--panel-border);
     color: var(--panel-fg);
@@ -441,6 +443,7 @@ textarea:focus {
 
 .table-data-mono tbody td {
     font-family: Consolas, "Courier New", monospace;
+    font-size: 0.8rem;
 }
 
 .stats-table thead th:last-child,
@@ -872,13 +875,13 @@ textarea:focus {
 
 @media (max-width: 600px) {
     .app-container {
-        padding: 12px;
-        padding-top: 60px; /* Space for burger menu */
+        padding: 0px;
+        padding-top: 50px; /* Space for burger menu */
     }
     
     .page-header,
     .content-section {
-        padding: 16px;
+        padding: 4px;
     }
     
     .button-row {
@@ -903,8 +906,8 @@ textarea:focus {
     }
     
     .burger-btn {
-        top: 16px;
-        left: 16px;
+        top: 2px;
+        left: 0px;
     }
 }
 
