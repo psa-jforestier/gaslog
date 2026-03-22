@@ -1,8 +1,3 @@
-function getVehicleIdFromQueryString() {
-	const urlParams = new URLSearchParams(window.location.search);
-	return urlParams.get("vehicleid");
-}
-
 var fuelPriceChartInstance = null;
 var mileageChartInstance = null;
 var fuelPricePointTimestamps = [];
@@ -39,11 +34,7 @@ function setGraphicsSubtitle(text) {
 }
 
 function setShowHistoryLink(vehicleId) {
-	const href = vehicleId
-		? "refill_history.html?vehicleid=" + encodeURIComponent(vehicleId)
-		: "refill_history.html";
-
-	updateButtonLinksBySelector(".showHistoryBtn", href);
+	updateVehiclePageLinks(".showHistoryBtn", "refill_history.html", vehicleId);
 }
 
 function renderFuelTypeLegend(fuelTypes) {

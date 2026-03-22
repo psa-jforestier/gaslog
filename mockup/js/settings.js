@@ -19,22 +19,7 @@ async function loadDeleteAccountWarning() {
     }
 
     try {
-        const response = await fetch(API_ENDPOINT + "?o=user&a=getinfo", {
-            method: "GET",
-            credentials: "include"
-        });
-
-        if (!response.ok) {
-            throw new Error("Failed to load user info");
-        }
-
-        const data = await response.json();
-        const user = data && data.user ? data.user : data;
-
-        if (!user || data.success === false) {
-            throw new Error((data && data.message) || "Failed to load user info");
-        }
-
+        const user = await fetchCurrentUser();
         const email = user && user.email ? user.email : "your account";
         setDeleteAccountWarning("Your account associated to " + email + " will be deleted.");
     } catch (error) {
@@ -101,16 +86,7 @@ async function exportData() {
 }
 
 async function deleteUserAccount() {
-    const response = await fetch(API_ENDPOINT + "?o=user&a=delete", {
-        method: "POST",
-        credentials: "include"
-    });
-
-    if (!response.ok) {
-        throw new Error("Failed to delete account");
-    }
-
-    return await response.json();
+    return await apiPost("?o=user&a=delete", {});
 }
 
 async function confirmDeleteData() {

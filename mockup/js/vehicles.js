@@ -16,7 +16,7 @@ function renderVehicles(vehicles) {
         const card = document.createElement("div");
         card.className = "item-card";
         card.onclick = function () {
-            window.location.href = "vehicle_history.html?vehicleid=" + encodeURIComponent(vehicle.id);
+            window.location.href = buildVehiclePageHref("vehicle_history.html", vehicle.id);
         };
 
         const title = document.createElement("h3");
@@ -60,13 +60,7 @@ function renderVehicles(vehicles) {
 }
 
 function setVehiclesLoading(isLoading) {
-    const loadingIndicator = document.getElementById("vehiclesLoading");
-
-    if (!loadingIndicator) {
-        return;
-    }
-
-    loadingIndicator.classList.toggle("hidden", !isLoading);
+    setElementHiddenById("vehiclesLoading", !isLoading);
 }
 
 async function initVehicles() {
@@ -93,4 +87,4 @@ document.addEventListener("DOMContentLoaded", function () {
     initVehicles();
 });
 
-window.toggleNav = toggleNav;
+

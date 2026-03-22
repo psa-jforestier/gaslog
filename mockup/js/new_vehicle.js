@@ -1,19 +1,7 @@
 var fuelContainer = null;
 
 async function saveVehicleToAPI(vehicleData) {
-    const response = await fetch(API_ENDPOINT + "?o=new_vehicle", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(vehicleData)
-    });
-
-    if (!response.ok) {
-        throw new Error("Failed to save vehicle to API");
-    }
-
-    return await response.json();
+    return await apiPost("?o=new_vehicle", vehicleData);
 }
 
 function saveVehicleToLocalStorage(vehicleData) {

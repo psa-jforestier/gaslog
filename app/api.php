@@ -2,6 +2,7 @@
 
 include_once(__DIR__.'/include.php');
 include_once(__DIR__.'/classUser.php');
+include_once(__DIR__.'/utils.php');
 $object = @$_REQUEST['o'];
 $action = @$_REQUEST['a'];
 $method = $_SERVER['REQUEST_METHOD'];
@@ -220,6 +221,34 @@ if ($object == 'user')
         // delete cookie to force logout
         setcookie('gaslog_userhash', '', time() - 3600, '/');
         echo json_encode(['success' => true]);
+        exit;
+    }
+    else if ($action == 'pair') {
+        $qr = @$_P['qrcode'];
+        $redirect = @$_P['redirect'] ?? 'index.html';
+        if ($qr == '') {
+            DIE_WITH_ERROR(400, 'ERR01 : QR code is required', 'index.html');
+            
+        }
+        // qr looks like "gaslog://zzz"
+        $prefix = 'gaslog://';
+        if (substr($qr, 0, strlen($prefix)) !== $prefix) {
+            DIE_WITH_ERROR(400, 'ERR02 : Invalid QR code schema', 'index.html');
+        }
+        $value = substr($qr, strlen($prefix));
+        $userinfo = $user->getUserInfoByUserHash($value);
+        if ($userinfo === false)        {
+            DIE_WITH_ERROR(404, 'ERR03 :Invalid QR code value', 'index.html');
+        }
+        // user is valid, we force login by setting the cookie
+        $user->login($userinfo['email']);
+        setcookie('gaslog_userhash', $userinfo['userhash'], strtotime('+1 year'), '/');
+        if ($redirect != '') {
+            header('Location: ' . $redirect);
+            echo "Welcome! You will be redirected shortly. If not, click <a href='$redirect'>here</a>.";
+        } else {
+            echo json_encode(['success' => true]);
+        }
         exit;
     }
     

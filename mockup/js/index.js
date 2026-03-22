@@ -6,26 +6,6 @@ var DEFAULT_CURRENCY = "€";
 var DEFAULT_QUANTITY_UNIT = "Liter";
 var DEFAULT_PRICE_UNIT = "€/L";
 
-function getRefillPreferences() {
-    try {
-        return JSON.parse(localStorage.getItem("gaslogRefillPreferences") || "{}");
-    } catch (error) {
-        return {};
-    }
-}
-
-function saveRefillPreferences(preferences) {
-    localStorage.setItem("gaslogRefillPreferences", JSON.stringify(preferences));
-}
-
-function getCurrentDateTimeLocalValue() {
-    var now = new Date();
-    now.setSeconds(0, 0);
-
-    var localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-    return localDate.toISOString().slice(0, 16);
-}
-
 function getVehicleLabel(vehicle) {
     return (vehicle && (vehicle.label || vehicle.name || "")).trim();
 }
@@ -384,25 +364,9 @@ function isRefillAmountCoherent() {
 }
 
 async function postRefill(vehicleId) {
-    var response = await fetch(API_ENDPOINT + "?o=refill&a=add&vehicleid=" + encodeURIComponent(vehicleId), {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(buildRefillPayload())
-    });
-
-    if (!response.ok) {
-        throw new Error("Failed to save refill");
-    }
-
-    try {
-        var data = await response.json();
-        if (data && data.success === false) {
-            throw new Error(data.message || "Failed to save refill");
-        }
-    } catch (error) {
-        // Some mock endpoints may return no JSON body.
+    const data = await apiPost("?o=refill&a=add&vehicleid=" + encodeURIComponent(vehicleId), buildRefillPayload());
+    if (data && data.success === false) {
+        throw new Error(data.message || "Failed to save refill");
     }
 }
 
@@ -508,5 +472,3 @@ window.addEventListener("hashchange", handleHashChange);
 window.toggleNav = toggleNav;
 window.showRefillForm = showRefillForm;
 window.hideRefillForm = hideRefillForm;
-window.getRefillPreferences = getRefillPreferences;
-window.saveRefillPreferences = saveRefillPreferences;

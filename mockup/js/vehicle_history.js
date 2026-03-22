@@ -1,17 +1,7 @@
-function getVehicleIdFromQueryString() {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get("vehicleid");
-}
 var fuelContainer = null;
 
 function setRefillHistoryLoading(isLoading) {
-    const loadingIndicator = document.getElementById("refillHistoryLoading");
-
-    if (!loadingIndicator) {
-        return;
-    }
-
-    loadingIndicator.classList.toggle("hidden", !isLoading);
+    setElementHiddenById("refillHistoryLoading", !isLoading);
 }
 
 function getRefillHistoryBody() {
@@ -30,7 +20,7 @@ function setStatsCellValue(cellId, value, formatOptions) {
         return;
     }
 
-    cell.textContent = formatRefillNumber(numericValue, formatOptions);
+    cell.textContent = formatNumberValue(numericValue, formatOptions);
 }
 
 function renderRefillStats(statsPayload) {
@@ -57,107 +47,11 @@ function renderRefillStats(statsPayload) {
 }
 
 function formatRefillDate(value) {
-    return formatDateTimeForDisplay(value); // return date time formatted to locale
-}
-
-function formatRefillNumber(value, options) {
-    const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) {
-        return "-";
-    }
-
-    return new Intl.NumberFormat(undefined, options || {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(numericValue);
-}
-
-function formatRefillMoney(value, currency, suffix) {
-    const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) {
-        return "-";
-    }
-
-    const amount = formatRefillNumber(numericValue);
-    const currencyLabel = typeof currency === "string" ? currency.trim() : "";
-    const suffixLabel = typeof suffix === "string" ? suffix.trim() : "";
-
-    if (suffixLabel) {
-        return currencyLabel ? amount + " " + currencyLabel + suffixLabel : amount + " " + suffixLabel;
-    }
-
-    return currencyLabel ? amount + " " + currencyLabel : amount;
-}
-
-function formatFuelPriceMoney(value, currency, suffix) {
-    const numericValue = Number(value);
-    if (!Number.isFinite(numericValue)) {
-        return "-";
-    }
-
-    const amount = formatRefillNumber(numericValue, {
-        minimumFractionDigits: 3,
-        maximumFractionDigits: 3
-    });
-    const currencyLabel = typeof currency === "string" ? currency.trim() : "";
-    const suffixLabel = typeof suffix === "string" ? suffix.trim() : "";
-
-    if (suffixLabel) {
-        return currencyLabel ? amount + " " + currencyLabel + suffixLabel : amount + " " + suffixLabel;
-    }
-
-    return currencyLabel ? amount + " " + currencyLabel : amount;
-}
-
-function normalizeRefills(payload) {
-    if (!Array.isArray(payload)) {
-        return [];
-    }
-
-    return payload.map(function (item) {
-        if (!item || typeof item !== "object") {
-            return null;
-        }
-
-        return {
-            date: item.refill_date || item.refillDate || item.date || item.created_at || item.createdAt || "",
-            totalPrice: item.total_price || item.totalPrice || item.price_total || item.priceTotal,
-            quantity: item.quantity || item.volume || item.qty,
-            fuelPrice: item.unit_price || item.unitPrice || item.fuel_price || item.fuelPrice || item.price_per_unit,
-            fuelType: item.fuel || item.fuel_type || item.fuelType || "-",
-            mileage: item.mileage || item.odometer || item.last_mileage || item.lastMileage,
-            currency: item.currency || item.currency_code || item.currencyCode || "",
-            fuelPriceUnit: item.fuel_price_unit || item.fuelPriceUnit || "/L"
-        };
-    }).filter(Boolean);
-}
-
-function getRefillSortValue(refill) {
-    if (!refill || !refill.date) {
-        return 0;
-    }
-
-    const timestamp = new Date(refill.date).getTime();
-    if (!Number.isNaN(timestamp)) {
-        return timestamp;
-    }
-
-    const normalizedValue = String(refill.date).replace(" ", "T");
-    const fallbackTimestamp = new Date(normalizedValue).getTime();
-    return Number.isNaN(fallbackTimestamp) ? 0 : fallbackTimestamp;
+    return formatDateTimeForDisplay(value);
 }
 
 function getMostRecentRefills(refills, limit) {
-    if (!Array.isArray(refills)) {
-        return [];
-    }
-
-    return refills
-        .slice()
-        .sort(function (left, right) {
-            return getRefillSortValue(right) - getRefillSortValue(left);
-        })
-        .slice(0, limit);
+    return sortRefillsByDateDesc(refills).slice(0, limit);
 }
 
 function renderRefillHistoryRows(refills, emptyMessage) {
@@ -184,11 +78,11 @@ function renderRefillHistoryRows(refills, emptyMessage) {
         const row = document.createElement("tr");
         const values = [
             formatRefillDate(refill.date),
-            formatRefillMoney(refill.totalPrice, refill.currency),
-            formatRefillNumber(refill.quantity) + (Number.isFinite(Number(refill.quantity)) ? " L" : ""),
-            formatFuelPriceMoney(refill.fuelPrice, refill.currency, refill.fuelPriceUnit),
+            formatMoneyValue(refill.totalPrice, refill.currency),
+            formatNumberValue(refill.quantity) + (Number.isFinite(Number(refill.quantity)) ? " L" : ""),
+            formatFuelPriceValue(refill.fuelPrice, refill.currency, refill.fuelPriceUnit),
             refill.fuelType || "-",
-            formatRefillNumber(refill.mileage, {
+            formatNumberValue(refill.mileage, {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
             })
@@ -237,7 +131,7 @@ async function loadRefillHistory(vehicleId) {
         }
 
         renderRefillStats(data);
-        renderRefillHistoryRows(getMostRecentRefills(normalizeRefills(data && data.refills), 5), "No refill history found.");
+        renderRefillHistoryRows(getMostRecentRefills(normalizeRefillRecords(data && data.refills), 5), "No refill history found.");
     } catch (error) {
         console.error("Error loading refill history:", error);
         renderRefillStats(null);
@@ -302,17 +196,11 @@ function loadVehicleFromLocalStorage(vehicleId) {
 }
 
 function setAllRefillsLink(vehicleId) {
-    const href = vehicleId
-        ? "refill_history.html?vehicleid=" + encodeURIComponent(vehicleId)
-        : "refill_history.html";
-    updateButtonLinksBySelector("#allRefillsLink", href);
+    updateVehiclePageLinks("#allRefillsLink", "refill_history.html", vehicleId);
 }
 
 function setShowGraphicsLink(vehicleId) {
-        const href = vehicleId
-        ? "graphics.html?vehicleid=" + encodeURIComponent(vehicleId)
-        : "graphics.html";
-    updateButtonLinksBySelector("#showGraphicsLink", href);
+    updateVehiclePageLinks("#showGraphicsLink", "graphics.html", vehicleId);
 }
 
 function populateForm(vehicleData) {
@@ -333,19 +221,7 @@ function getFormData() {
 }
 
 async function updateVehicleViaAPI(vehicleId, vehicleData) {
-    const response = await fetch(API_ENDPOINT + "?o=vehicle&a=update&vehicleid=" + encodeURIComponent(vehicleId), {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(vehicleData)
-    });
-
-    if (!response.ok) {
-        throw new Error("Failed to update vehicle");
-    }
-
-    return await response.json();
+    return await apiPost("?o=vehicle&a=update&vehicleid=" + encodeURIComponent(vehicleId), vehicleData);
 }
 
 function updateVehicleInLocalStorage(vehicleId, vehicleData) {
@@ -399,18 +275,7 @@ async function handleFormSubmit(event) {
 }
 
 async function deleteVehicleViaAPI(vehicleId) {
-    const response = await fetch(API_ENDPOINT + "?o=vehicle&a=delete&vehicleid=" + encodeURIComponent(vehicleId), {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    });
-
-    if (!response.ok) {
-        throw new Error("Failed to delete vehicle");
-    }
-
-    return await response.json();
+    return await apiPost("?o=vehicle&a=delete&vehicleid=" + encodeURIComponent(vehicleId), {});
 }
 
 function deleteVehicleFromLocalStorage(vehicleId) {

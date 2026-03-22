@@ -95,9 +95,9 @@ class Refill
         $stmt->bindValue(':nrefill', $nrefill, PDO::PARAM_INT);
         $stmt->execute();
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        if (count($data) == 0)
+        if (count($data) < 2)
         {
-            return false; // we need at least 1 refill to calculate stats
+            return false; // we need at least 2 refill to calculate stats
         }
         return $this->getStatsFromReffils($data);
         
@@ -116,9 +116,9 @@ class Refill
         $stmt->bindValue(':km', $km, PDO::PARAM_INT);
         $stmt->execute();
         $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        if (count($data) == 0)
+        if (count($data) <  2)
         {
-            return false; // we need at least 1 refill to calculate stats
+            return false; // we need at least 2 refills to calculate stats
         }
         return $this->getStatsFromReffils($data);
     }
