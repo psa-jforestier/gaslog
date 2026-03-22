@@ -5,8 +5,8 @@
 
 include_once __DIR__.'/include.php';
 
-$db = Database::getInstance($CONFIG['db']['dsn'], $CONFIG['db']['dbuser'], $CONFIG['db']['dbpassword']);
 if (@$_REQUEST['confirm'] == '1') {
+    $db = Database::getInstance($CONFIG['db']['dsn'], $CONFIG['db']['dbuser'], $CONFIG['db']['dbpassword']);
     $type = $CONFIG['db']['type'];
     $sqlScript = file_get_contents(__DIR__.'/../schema.'.$type.'.sql');
     $db->multipleQuery($sqlScript);
@@ -17,6 +17,7 @@ if (@$_REQUEST['confirm'] == '1') {
 // Check if the database exists, if not create it
 $to_create = false;
 try {  
+    $db = Database::getInstance($CONFIG['db']['dsn'], $CONFIG['db']['dbuser'], $CONFIG['db']['dbpassword']);
     $db->query('SELECT 1 FROM user LIMIT 1');
     } catch (Exception $e) 
     {
