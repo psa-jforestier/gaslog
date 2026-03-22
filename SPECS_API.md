@@ -139,6 +139,24 @@ Method : POST
 Query string parameters : `o=station&a=add`
 JSON parameters : `{"name":"TheStation", "lat":12.345, "long":"-12.345}`
 Return : `{"success":true, "stationId":1234}`
+**Update a station**
+Purpose : update the name, or the coordinate of a station. May fails if the user already have a station with the same name.
+Method : POST
+Query string parameters : `o=station&a=update&stationid=xx`
+JSON parameters : `{"name":"TheStation", "lat":12.345, "long":"-12.345}`
+Return : `{"success":true}`
+**Delete a station**
+Purpose : Delete a station. Refill associated to this station will be orphans.
+Method : GET
+Query string parameters : `o=station&a=delete&stationid=xx`
+JSON parameters : `{"name":"TheStation", "lat":12.345, "long":"-12.345}`
+Return : `{"success":true}`
+
+**Get a station and its details**
+Purpose : return details of a station.
+Method : GET
+Query string parameters: `o=station&a=get&stationid=xx`
+Return : `{"success":true,"station":{"id":"12","name":"The Station","created_date":"2026-03-14 18:16:23","last_usage_date":null,"latitude":"48.9725494","longitude":"2.207494","pluscode":null,"total_refills":"0","last_refill":null}}`
 
 *Download/upload data*
 The set of API allow to user to export / import all known information about him : user information, vehicles, refills, stations.

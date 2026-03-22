@@ -212,6 +212,35 @@ class Station
         $stmt->execute(['user_id' => $userId]);
         return true;
     }
+    
+    public function isStationWithSameNameExists($userId, $name)
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM station WHERE user_id = :user_id AND name = :name");
+        $stmt->execute(['user_id' => $userId, 'name' => $name]);
+        return $stmt->fetchColumn() > 0;
+    }
+    public function getStationDetails($userid, $stationid)
+    {
+        $stmt = $this->db->prepare("SELECT * FROM station WHERE id = :id AND user_id = :user_id");
+        $stmt->execute(['id' => $stationid, 'user_id' => $userid]);
+        $station = $stmt->fetch(PDO::FETCH_ASSOC); // the station should exists
+        unset($station['user_id']); // we don't need to return user_id
+        // now try to get some stat info about this station
+        $stmt = $this->db->prepare("select count(*) as total_refills, max(refill_date) as last_refill from refill where station_id = :station_id");
+        $stmt->execute(['station_id' => $stationid]);
+        $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($stats) {
+            $station['total_refills'] = $stats['total_refills'];
+            $station['last_refill'] = $stats['last_refill'];
+        }
 
-        
+        return $station;
+    }
+
+    public function updateStation($userid, $stationid, $name, $lat, $long)
+    {
+        $stmt = $this->db->prepare("UPDATE station SET name = :name, latitude = :lat, longitude = :long WHERE id = :id AND user_id = :user_id");
+        $stmt->execute(['name' => $name, 'lat' => $lat, 'long' => $long, 'id' => $stationid, 'user_id' => $userid]);
+        return $stmt->rowCount() > 0;
+    }
 }

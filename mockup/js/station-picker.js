@@ -1,5 +1,5 @@
 (function () {
-    var STATION_STORAGE_KEY = "gaslogStations";
+    var STATION_STORAGE_KEY = window.STATION_STORAGE_KEY;
     var DEFAULT_STATIONS = [
         //"Total - Avenue des Champs",
         //"Shell - Route de Paris",

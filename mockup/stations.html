@@ -6,6 +6,7 @@
     <title>Stations - GasLog</title>
     <link rel="icon" type="image/png" href="../app/gaslog.png">
     <link rel="stylesheet" href="system-design.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 </head>
 <body>
     <!-- Burger Menu Button -->
@@ -42,7 +43,9 @@
         <section class="content-section">
             <h2>Your Stations</h2>
             
-            <div class="item-list">
+            <p id="stationsStatus" class="text-muted hidden"></p>
+
+            <div class="item-list" id="stationsList">
                 <div class="item-card" onclick="window.location.href='station_details.html'">
                     <h3>Total - Avenue des Champs</h3>
                     <div class="item-meta">
@@ -81,26 +84,44 @@
         <section class="content-section">
             <h2>Add New Station</h2>
             
+            <p id="addStationStatus" class="text-muted hidden"></p>
+
             <div class="form-group">
                 <label>Select from Map</label>
-                <div class="map-container">
-                    <p>Map (Leaflet OpenStreetMap)<br>Drag to select gas station location</p>
+                <div id="addStationMapContainer" style="display: none;">
+                    <div id="addStationLeafletMap" style="height: 300px; width: 100%; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px;"></div>
+                    <p id="addStationLocationText" style="font-size: 0.9em; color: #666; margin-top: 10px;">Map (Leaflet OpenStreetMap)<br>Drag pin to select gas station location</p>
                 </div>
             </div>
 
             <div class="form-group">
-                <label for="stationName">Station Name</label>
-                <input type="text" id="stationName" placeholder="Enter station name" maxlength="32">
+                <label for="addStationName">Station Name</label>
+                <input type="text" id="addStationName" placeholder="Enter station name" maxlength="32">
             </div>
 
+            <div class="form-group">
+                <label>Coordinates</label>
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <input type="text" id="addStationLatitude" readonly style="background-color: #f5f5f5;">
+                    </div>
+                    <div style="flex: 1;">
+                        <input type="text" id="addStationLongitude" readonly style="background-color: #f5f5f5;">
+                    </div>
+                </div>
+            </div>
+
+            <p id="addStationErrorMessage" class="text-muted hidden" style="color: var(--danger-bg); margin-bottom: 1rem;"></p>
+
             <div class="button-row">
-                <button type="button" class="btn btn-cancel" onclick="window.location.href='index.html'">Cancel</button>
-                <button type="button" class="btn btn-ok">OK</button>
+                <button type="button" class="btn btn-cancel" onclick="window.location.href='stations.html'">Cancel</button>
+                <button type="button" id="addStationOkBtn" class="btn btn-ok" disabled>OK</button>
             </div>
         </section>
     </div>
 
     <script src="js/app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="js/stations.js"></script>
 </body>
 </html>

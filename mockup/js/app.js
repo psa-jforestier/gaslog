@@ -1,5 +1,6 @@
 var API_ENDPOINT = "/app/api.php";
 var VEHICLE_STORAGE_KEY = "gaslogVehicle";
+var STATION_STORAGE_KEY = "gaslogStations";
 var REFILL_PREFERENCES_KEY = "gaslogRefillPreferences";
 var VEHICLE_BRANDS = ["Audi", "BMW", "Citroen", "Ford", "Mercedes", "Peugeot", "Renault", "Tesla", "Toyota", "Volkswagen", "Other"];
 var VEHICLE_FUELS = ["SP95E10", "SP95E5", "SP98", "E85", "Diesel", "Premium Diesel", "GPL", "LGPL", "CNG/GNV"];
@@ -569,6 +570,7 @@ function updateButtonLinksBySelector(selector, newhref) {
 
 window.toggleNav = toggleNav;
 window.VEHICLE_STORAGE_KEY = VEHICLE_STORAGE_KEY;
+window.STATION_STORAGE_KEY = STATION_STORAGE_KEY;
 window.VEHICLE_BRANDS = VEHICLE_BRANDS;
 window.VEHICLE_FUELS = VEHICLE_FUELS;
 window.REFILL_PREFERENCES_KEY = REFILL_PREFERENCES_KEY;

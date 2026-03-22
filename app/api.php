@@ -20,7 +20,7 @@ if ($content_type === "application/json") {
     // Merge json_data into $_P (the _REQUEST)
     if (is_array($json_data)) {
         foreach($json_data as $k => $v) {
-            $_P[$k] = $v;
+            $_P[$k] = trim($v);
         }
     }
 }
@@ -429,12 +429,16 @@ if ($object == 'station')
         echo json_encode(['success' => true, 'stations' => $stations]);
         exit;
     }
-    if ($action == 'add')
+    else if ($action == 'add')
     {
         $user = new User($db);
         $userinfo = $user->getUserInfoByUserHashOrFail($userhash);
 
         $station = new Station($db);
+        if ($station->isStationWithSameNameExists($userinfo['id'], @$_P['name'])) {
+            echo json_encode(['success' => false, 'message' => 'A station with the same name already exists']);
+            exit;
+        }
         // Limit the number of stations per user to 10. The station never used is replaced by the new one
         $stations = $station->getUserStations($userinfo['id']);
         if (count($stations) >= $CONFIG['app']['maxstation']) {
@@ -463,6 +467,61 @@ if ($object == 'station')
         }
         else {
             echo json_encode(['success' => false, 'message' => 'Error adding station']);
+        }
+        exit;
+    }
+    else if ($action == 'get')
+    {
+        $user = new User($db);
+        $userinfo = $user->getUserInfoByUserHashOrFail($userhash);
+
+        $station = new Station($db);
+        $stationId = @$_P['stationid'];
+        $stationDetails = $station->getStationDetails($userinfo['id'], $stationId);
+        if ($stationDetails) {
+            echo json_encode(['success' => true, 'station' => $stationDetails]);
+        }
+        else {
+            echo json_encode(['success' => false, 'message' => 'Station not found']);
+        }
+        exit;    
+    }
+    else if ($action == 'delete')
+    {
+        $user = new User($db);
+        $userinfo = $user->getUserInfoByUserHashOrFail($userhash);
+        $station = new Station($db);
+        $stationId = @$_P['stationid'];
+        $res = $station->deleteStation($userinfo['id'], $stationId);
+        if ($res) {
+            echo json_encode(['success' => true]);
+            exit;
+        }
+        else {
+            echo json_encode(['success' => false, 'message' => 'Error deleting station']);
+            exit;
+        }   
+    }
+    else if ($action == 'update')
+    {
+        $user = new User($db);
+        $userinfo = $user->getUserInfoByUserHashOrFail($userhash);
+
+        $station = new Station($db);
+        $stationId = @$_P['stationid'];
+        $name = @$_P['name'];
+        $lat = @$_P['lat'];
+        $long = @$_P['long'];
+        if ($station->isStationWithSameNameExists($userinfo['id'], $name)) {
+            echo json_encode(['success' => false, 'message' => 'A station with the same name already exists']);
+            exit;
+        }
+        $res = $station->updateStation($userinfo['id'], $stationId, $name, $lat, $long);
+        if ($res) {
+            echo json_encode(['success' => true]);
+        }
+        else {
+            echo json_encode(['success' => false, 'message' => 'Error updating station']);
         }
         exit;
     }
