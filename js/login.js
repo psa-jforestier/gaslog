@@ -218,7 +218,7 @@ function generateQRCode(value) {
     // Generate QR code
     if (typeof QRCode !== "undefined") {
         new QRCode(qrcodeContainer, {
-            text: qrstring,
+            text: pairUrl, // Use the pairing URL for the QR code
             width: 200,
             height: 200
         });
