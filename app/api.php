@@ -20,7 +20,7 @@ if ($content_type === "application/json") {
     // Merge json_data into $_P (the _REQUEST)
     if (is_array($json_data)) {
         foreach($json_data as $k => $v) {
-            $_P[$k] = trim($v);
+            $_P[$k] = is_string($v) ? trim($v) : $v;
         }
     }
 }
