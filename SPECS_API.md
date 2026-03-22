@@ -1,4 +1,4 @@
-This page explains the API for GasLog
+*This page explains the API for GasLog*
 
 Endpoint : `/app/api.php`
 
@@ -56,6 +56,13 @@ Query string parameters : `o=user&a=confirmcode`
 JSON parameters : `{"email":"ppp@ppp.com", "name":"John Doe", "code":"123456"}`
 Return : `{"success":true, "userhash":"abc123"}`
 
+**Pair**
+Purpose : Use to verify if the user hash is valid. Mainly used for QR code pairing. If the code is valid (similar to `gaslog://abcdef`), the `gaslog_userhash` cookie is set.
+Method : GET
+Query string parameters : `o=user&a=pair`
+GET parameters : `qrcode=xxx&redirect=zzz`
+Return : if no redirect : `{"success":true}` else a HTTP 301 redirection to the redirect parameter.
+
 **Delete**
 Purpose : Delete all information about the user (vehicles, refills, stations), and log out the user by asking the browser to delete the  `gaslog_userhash` cookie.
 Method : GET
@@ -92,4 +99,51 @@ Query string parameters : `o=new_vehicle`
 JSON parameters : `{"name":"TheCar", "brand":"John Doe", "purchaseDate":"yyyy-mm-dd", "initialMileage":0, "distanceUnit":"km", "fuels": [...]}`
 Return : `{"success":true, "vehicleId":123}`
 
+*Refill*
+Manage refill/refuel of a vehicle. A `vehicleid` is always mandatory.
+**Add a refill**
+Purpose : add a refill to a vehicle of a user.
+Method : POST
+Query string parameters : `o=refill&a=add`
+JSON parameters : a lot ... 
+Return : `{"success":true}`
 
+**Get refills statistic, short version**
+Purpose : Return a limited set of the last refills and some statistics of (based on the last 3 refills, last 10 refills and the last 20.000km) refill/refuel of a vehicle
+Method : GET
+Query string parameters : `o=refills&a=shortstats`
+Return : `{"success":true, "refills":[...], "stats_last_refills3":[...], "stats_last_refills10":[...], "stats_last_refills20000":[...]}`
+
+**Get all refills**
+Purpose : Return the list of all refills of a vehicle, and the vehicle information.
+Method : GET
+Query string parameters : `o=refills&a=allstats`
+Return : `{"success":true, "allrefills":[...], "vehicle":[...]}`
+
+*Gas Station*
+This set manage gas stations.
+**Get last stations**
+Purpose : Return the list of gas stations used by the user
+Method : GET
+Query string parameters : `o=stations`
+Return : `{"success":true, "stations":[...]}`
+**Get nearest stations**
+Purpose : Return the list of gas stations near the user. It call the Overpass API from an Openstreetmap server. Latitude and longitude are truncated to 3 digits.  The radius of the search is hard coded to 2km. This API can be called even in non-logged mode (there is no check for login user). The result of the API can be set in browser cache.
+Method : GET
+Query string parameters : `o=getnearest&lat=n.nnn&long=n.nnn`
+JSON parameters : a lot ... 
+Return : `{"success":true, "stations":[...]}` . Can fail with HTTP 429 (too many calls) or 504 (error when calling the Overpass API)
+**Add a station**
+Purpose : Add a station manually entered by the user. The number of station per user is limited, so a new station will remove the oldest one. Raise an error if the station already exists (same name)
+Method : POST
+Query string parameters : `o=station&a=add`
+JSON parameters : `{"name":"TheStation", "lat":12.345, "long":"-12.345}`
+Return : `{"success":true, "stationId":1234}`
+
+*Download/upload data*
+The set of API allow to user to export / import all known information about him : user information, vehicles, refills, stations.
+**Download data**
+Purpose : create a JSON file and send it as an attachment. Contains all know information about the user.
+Method : GET
+Query string parameters : `o=data&a=download`
+Return : `{"success":true, "user":{...}, "vehicles":[...], "stations":[...], "date_exported": "yyyy-mm-dd hh:ii:ss"}`
