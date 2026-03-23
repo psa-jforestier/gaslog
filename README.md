@@ -1,5 +1,7 @@
 # GasLog
 
+#### Fuel tracking for everyday drivers
+
 GasLog is a web application for tracking vehicle fuel refills. It helps users record refill events, monitor costs and consumption trends, and manage related entities such as vehicles and gas stations.
 
 ## Purpose Of The Application
