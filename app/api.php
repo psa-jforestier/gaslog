@@ -250,6 +250,14 @@ if ($object == 'user')
             echo json_encode(['success' => true]);
         }
         exit;
+    } else if ($action == 'update')
+    {
+        $userinfo = $user->getUserInfoByUserHash($userhash);
+        $name = @$_P['name'];
+        
+        $user->updateUser($userinfo['id'], $name);
+        echo json_encode(['success' => true]);
+        exit;
     }
     
 }

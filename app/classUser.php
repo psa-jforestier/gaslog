@@ -140,4 +140,10 @@ class User
         $stmt->execute(['userid' => $userid]);
         return true;
     }
+
+    function updateUser($userid, $name)
+    {
+        $stmt = $this->db->prepare("update user set name = :name where id = :userid");
+        $stmt->execute(['userid' => $userid, 'name' => $name]);
+        return true;
 }
