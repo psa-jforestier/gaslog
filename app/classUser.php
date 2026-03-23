@@ -146,4 +146,5 @@ class User
         $stmt = $this->db->prepare("update user set name = :name where id = :userid");
         $stmt->execute(['userid' => $userid, 'name' => $name]);
         return true;
+    }
 }
