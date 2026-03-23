@@ -152,7 +152,6 @@ function initAccountManagement() {
     loadUserInfo();
     setupNameChangeValidation();
     setupSignOutButton();
-    setupScanQRButton();
 }
 
 function loadUserInfo() {
@@ -228,6 +227,17 @@ function generateQRCode(value) {
     }
 }
 
+function getPairUrlForCurrentUser() {
+    const pairingValue = getUserHash() || window.userEmail;
+    if (!pairingValue) {
+        return "";
+    }
+
+    const qrstring = "gaslog://" + pairingValue;
+    const redirectUrl = window.location.href;
+    return window.location.protocol + "//" + window.location.host + "/app/api.php?o=user&a=pair&qrcode=" + encodeURIComponent(qrstring) + "&redirect=" + encodeURIComponent(redirectUrl);
+}
+
 function setupNameChangeValidation() {
     const nameInput = document.getElementById("accountUserName");
     const updateBtn = document.getElementById("updateNameBtn");
@@ -255,7 +265,7 @@ function updateUserName() {
     }
     
     // Send update to API
-    apiPost("?o=user&a=updatename", { name: newName })
+    apiPost("?o=user&a=update", { name: newName })
         .then(function (data) {
             if (data.success !== false) {
                 alert("Name updated successfully!");
@@ -304,158 +314,6 @@ function signOut() {
         });
 }
 
-function setupScanQRButton() {
-    const scanQRBtn = document.getElementById("scanQRBtn");
-    
-    if (scanQRBtn) {
-        scanQRBtn.addEventListener("click", function () {
-            openQrScannerAndPair();
-        });
-    }
-}
-
-function submitPairRequest(decodedValue) {
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = API_ENDPOINT + "?o=user&a=pair";
-
-    const qrcodeInput = document.createElement("input");
-    qrcodeInput.type = "hidden";
-    qrcodeInput.name = "qrcode";
-    qrcodeInput.value = String(decodedValue || "");
-
-    form.appendChild(qrcodeInput);
-    document.body.appendChild(form);
-    form.submit();
-}
-
-function openQrScannerAndPair() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert("Camera is not available in this browser.");
-        return;
-    }
-
-    if (typeof BarcodeDetector === "undefined") {
-        alert("QR scanning is not supported by this browser.");
-        return;
-    }
-
-    let isClosed = false;
-    let stream = null;
-    let rafId = 0;
-
-    const overlay = document.createElement("div");
-    overlay.style.cssText = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 10001; display: flex; align-items: center; justify-content: center; padding: 1rem; box-sizing: border-box;";
-
-    const panel = document.createElement("div");
-    panel.style.cssText = "width: 100%; max-width: 520px; background: #111; color: #fff; border-radius: 12px; padding: 12px; box-sizing: border-box;";
-
-    const title = document.createElement("h3");
-    title.textContent = "Scan QR Code";
-    title.style.cssText = "margin: 0 0 8px 0; font-size: 1.1rem;";
-
-    const info = document.createElement("p");
-    info.textContent = "Center the QR code in the camera frame.";
-    info.style.cssText = "margin: 0 0 10px 0; color: #ddd; font-size: 0.95rem;";
-
-    const video = document.createElement("video");
-    video.setAttribute("playsinline", "true");
-    video.autoplay = true;
-    video.muted = true;
-    video.style.cssText = "width: 100%; border-radius: 8px; background: #000;";
-
-    const actions = document.createElement("div");
-    actions.style.cssText = "display: flex; justify-content: flex-end; margin-top: 10px;";
-
-    const cancelBtn = document.createElement("button");
-    cancelBtn.type = "button";
-    cancelBtn.className = "btn btn-cancel";
-    cancelBtn.textContent = "Cancel";
-
-    actions.appendChild(cancelBtn);
-    panel.appendChild(title);
-    panel.appendChild(info);
-    panel.appendChild(video);
-    panel.appendChild(actions);
-    overlay.appendChild(panel);
-    document.body.appendChild(overlay);
-
-    function closeScanner() {
-        if (isClosed) {
-            return;
-        }
-
-        isClosed = true;
-
-        if (rafId) {
-            cancelAnimationFrame(rafId);
-            rafId = 0;
-        }
-
-        if (stream) {
-            stream.getTracks().forEach(function (track) {
-                track.stop();
-            });
-            stream = null;
-        }
-
-        if (overlay.parentNode) {
-            overlay.parentNode.removeChild(overlay);
-        }
-    }
-
-    cancelBtn.addEventListener("click", function () {
-        closeScanner();
-    });
-
-    navigator.mediaDevices.getUserMedia({
-        video: {
-            facingMode: {
-                ideal: "environment"
-            }
-        },
-        audio: false
-    }).then(function (mediaStream) {
-        stream = mediaStream;
-        video.srcObject = mediaStream;
-
-        return video.play();
-    }).then(function () {
-        const detector = new BarcodeDetector({ formats: ["qr_code"] });
-
-        function scanFrame() {
-            if (isClosed) {
-                return;
-            }
-
-            detector.detect(video)
-                .then(function (codes) {
-                    if (isClosed) {
-                        return;
-                    }
-
-                    if (codes && codes.length > 0 && codes[0].rawValue) {
-                        const decodedValue = String(codes[0].rawValue);
-                        closeScanner();
-                        submitPairRequest(decodedValue);
-                        return;
-                    }
-
-                    rafId = requestAnimationFrame(scanFrame);
-                })
-                .catch(function () {
-                    rafId = requestAnimationFrame(scanFrame);
-                });
-        }
-
-        scanFrame();
-    }).catch(function (error) {
-        console.error("Unable to start QR scanner:", error);
-        closeScanner();
-        alert("Unable to access camera for QR scan.");
-    });
-}
-
 function showQRFullscreen() {
     // Create fullscreen overlay
     const overlay = document.createElement("div");
@@ -467,10 +325,10 @@ function showQRFullscreen() {
     overlay.appendChild(qrContainer);
     
     // Generate larger QR code
-    if (typeof QRCode !== "undefined" && window.userEmail) {
-        const emailHash = btoa(window.userEmail);
+    const pairUrl = getPairUrlForCurrentUser();
+    if (typeof QRCode !== "undefined" && pairUrl) {
         new QRCode(qrContainer, {
-            text: emailHash,
+            text: pairUrl,
             width: 300,
             height: 300
         });
