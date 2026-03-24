@@ -26,6 +26,12 @@ In case of error, the response is also a JSON string like :
     "message":"plain text error message"
 }
 ```
+## Version
+To get information about the API version
+- Purpose : return info about the API. No need to be logged.
+- Method : GET
+- Query string parameters : `o=version`
+- Return : `{"success":true,"version":"0.1.0","git_commit":"cb1bb18"}`
 
 ## User
 To manage actions on user.

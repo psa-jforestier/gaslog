@@ -203,6 +203,9 @@ class Station
          return $a["distance"] <=> $b["distance"];
         });
 
+        // Return top 5 closest stations
+        $stations = array_slice($stations, 0, 5);
+
         return $stations;
     }
 

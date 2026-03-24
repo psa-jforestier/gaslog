@@ -34,6 +34,17 @@ if ($userhash != '')
     setcookie('gaslog_userhash', $userhash, strtotime('+1 year'), '/');
 }
 header("cache-control: private, max-age=0, no-cache, no-store, must-revalidate"); // by default : no cache
+
+if ($object == 'version') 
+{ // Get the current version of the app, used to check if the user has the latest version or not
+    $git_commit = trim(shell_exec('git rev-parse --short HEAD'));
+    echo json_encode(
+        ['success' => true, 
+        'version' => $CONFIG['app']['version'],
+        'git_commit' => $git_commit]);
+    exit;
+}
+
 if ($object == 'vehicles') 
 { // Get vehicles for the current user, used on the homepage to display the list of vehicles and on the refill form to select a vehicle
     include_once(__DIR__.'/classVehicle.php');
@@ -280,7 +291,10 @@ if ($object == 'refill')
         $unitprice = @$_P['unitPrice'] ?? false;
         $quantity = @$_P['quantity'] ?? false;
         $totalprice = @$_P['totalPrice'] ?? false;
-        if ($unitprice == false)
+        // transform string numbers with comma into float (e.g. "1,23" into 1.23)
+        $unitprice = str_replace(',', '.', $unitprice);
+        $quantity = str_replace(',', '.', $quantity);
+        $totalprice = str_replace(',', '.', $totalprice);        if ($unitprice == false)
         {
             $unitprice = $_P['unitPrice'] = floatval($totalprice) / floatval($quantity);
         }
@@ -292,7 +306,6 @@ if ($object == 'refill')
         {
             $quantity = $_P['quantity'] = floatval($totalprice) / floatval($unitprice);
         }
-         
         if($unitprice == 0 && $quantity == 0 && $totalprice == 0) {
             die('!! No price or quantity provided');
         }
@@ -319,11 +332,11 @@ if ($object == 'refill')
             @$_P['refillDate'] ?? Database::NOW(),
             @$_P['stationId'],
             @$_P['fuelType'],
-            @$_P['totalPrice'] ?? 0.0,
+            $totalprice,
             @$_P['currency'],
-            @$_P['quantity'] ?? 0.0,
+            $quantity,
             //@$_P['quantityUnit'], no need for unit, we convert everything to liters before
-            @$_P['unitPrice'] ?? 0.0,
+            $unitprice,
             @$_P['mileage'] ?? 0.0,
             json_encode(@$_P['stationInfo'] ?? '')
 

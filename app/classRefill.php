@@ -60,6 +60,7 @@ class Refill
 
     private function getStatsFromReffils($refills)
     {
+        
         $fuel_consumption_L_per_100km = 0;
         $cost_per_100km = 0;
         $fuel_price_per_L = 0;
@@ -69,16 +70,30 @@ class Refill
         
         foreach($refills as $d)
         {
-            if ($d['mileage'] < $distance_min) $distance_min = $d['mileage'];
-            if ($d['mileage'] > $distance_max) $distance_max = $d['mileage'];
+            if ($d['mileage'] != '')
+            {
+                if ($d['mileage'] < $distance_min) $distance_min = $d['mileage'];
+                if ($d['mileage'] > $distance_max) $distance_max = $d['mileage'];
+            }
             $fuel_price_per_L += $d['unit_price'];
             $cost_per_100km += $d['total_price'];
             $fuel_consumption_L_per_100km += $d['quantity'];
         }
-        $distance = $distance_max - $distance_min;
+        
+        if (is_numeric($distance_min) && is_numeric($distance_max))
+        {
+            $distance = $distance_max - $distance_min;
+            $cost_per_100km = 100 * ($cost_per_100km - end($refills)['total_price']) / $distance;
+            $fuel_consumption_L_per_100km = 100 * ($fuel_consumption_L_per_100km - end($refills)['quantity']) / $distance;
+        }
+        else
+        {
+            $distance = null;
+            $cost_per_100km = null;
+            $fuel_consumption_L_per_100km = null;
+        }
         $fuel_price_per_L = $fuel_price_per_L / count($refills);
-        $cost_per_100km = 100 * ($cost_per_100km - end($refills)['total_price']) / $distance;
-        $fuel_consumption_L_per_100km = 100 * ($fuel_consumption_L_per_100km - end($refills)['quantity']) / $distance;
+                
         return [
             'distance' => $distance,
             'fuel_price_per_L' => $fuel_price_per_L,

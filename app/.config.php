@@ -10,3 +10,6 @@ $CONFIG['db']['dbpassword'] = null;
 $CONFIG['app']['maxstation'] = 10; // maximum number of station per user
 $CONFIG['app']['maxvehicle'] =  5; // maximum number of vehicle per user
 
+// Some consts
+$CONFIG['app']['version'] = '0.1.0';
+$CONFIG['app']['languages'] = ['en', 'fr'];

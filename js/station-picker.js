@@ -5,12 +5,23 @@
         //"Shell - Route de Paris",
         //"BP - Centre Ville"
     ];
+    var NEARBY_MAP_DEFAULT_ZOOM = 15;
+    var NEARBY_MAP_SINGLE_STATION_ZOOM = 16;
+    var NEARBY_MAP_MAX_FIT_ZOOM = 16;
 
     var state = {
-        locationStationName: "",
-        locationLatitude: "",
-        locationLongitude: "",
-        locationStationApiId: ""
+        userLatitude: "",
+        userLongitude: "",
+        nearbyStations: [],
+        selectedNearbyStation: null,
+        nearbyRequestSequence: 0,
+        mapReloadTimer: 0,
+        nearbyMap: null,
+        nearbyMarkersLayer: null,
+        userMarker: null,
+        preferredNearbyStationName: "",
+        preferredNearbyStationId: "",
+        ignoreNextMapMoveReload: false
     };
 
     var currentSelectedStation = null;
@@ -201,8 +212,8 @@
             overlay: document.getElementById("stationPickerOverlay"),
             newStationInput: document.getElementById("newStation"),
             newStationRadio: document.getElementById("newStationRadio"),
-            nearestStationRadio: document.getElementById("nearestStationRadio"),
             nearestStationLabel: document.getElementById("nearestStationLabel"),
+            nearestStationMap: document.getElementById("stationPickerNearestMap"),
             locationResult: document.getElementById("locationStationResult"),
             recentStationsLoading: document.getElementById("recentStationsLoading"),
             recentStationsContainer: document.getElementById("recentStationsContainer"),
@@ -232,7 +243,7 @@
             return "";
         }
 
-        if (checked.id === "nearestStationRadio" || checked.value === NEW_STATION_RADIO_VALUE) {
+        if (checked.value === NEW_STATION_RADIO_VALUE) {
             return "";
         }
 
@@ -242,11 +253,368 @@
     function getCheckedRecentStationId() {
         var checked = getSelectedStationRadio();
 
-        if (!checked || checked.id === "nearestStationRadio" || checked.value === NEW_STATION_RADIO_VALUE) {
+        if (!checked || checked.value === NEW_STATION_RADIO_VALUE) {
             return "";
         }
 
         return String(checked.dataset.stationId || "").trim();
+    }
+
+    function clearStationRadioSelection(exceptElement) {
+        var radios = document.querySelectorAll('input[name="station"]');
+
+        Array.prototype.forEach.call(radios, function (radio) {
+            if (exceptElement && radio === exceptElement) {
+                return;
+            }
+
+            radio.checked = false;
+        });
+    }
+
+    function setNearestStationSummary(message) {
+        var elements = getPickerElements();
+        if (!elements.nearestStationLabel) {
+            return;
+        }
+
+        elements.nearestStationLabel.textContent = String(message || "").trim();
+    }
+
+    function setLocationMapDisabled(isDisabled) {
+        var elements = getPickerElements();
+        if (!elements.nearestStationMap || !elements.nearestStationMap.parentNode) {
+            return;
+        }
+
+        elements.nearestStationMap.parentNode.classList.toggle("is-disabled", !!isDisabled);
+    }
+
+    function escapeHtml(value) {
+        return String(value || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function formatNearbyStationDistance(distance) {
+        var numericDistance = Number(distance);
+
+        if (!Number.isFinite(numericDistance) || numericDistance < 0) {
+            return "";
+        }
+
+        if (numericDistance >= 1000) {
+            return (numericDistance / 1000).toFixed(1) + " km";
+        }
+
+        return Math.round(numericDistance) + " m";
+    }
+
+    function normalizeNearbyStations(payload) {
+        var rawStations = [];
+
+        if (Array.isArray(payload)) {
+            rawStations = payload;
+        } else if (payload && Array.isArray(payload.stations)) {
+            rawStations = payload.stations;
+        } else if (payload && Array.isArray(payload.data)) {
+            rawStations = payload.data;
+        }
+
+        return rawStations.map(function (station) {
+            var latitude = Number(station && station.lat);
+            var longitude = Number(station && station.long);
+
+            if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+                return null;
+            }
+
+            return {
+                id: String(station && (station.id || station.stationid || station.stationId) || "").trim(),
+                name: buildStationLabelFromLocationData(station),
+                latitude: latitude,
+                longitude: longitude,
+                distance: Number(station && station.distance),
+                raw: station || {}
+            };
+        }).filter(function (station) {
+            return station && station.name;
+        });
+    }
+
+    function getNearbyStationPopupContent(station) {
+        var title = escapeHtml(station && station.name);
+        var distance = formatNearbyStationDistance(station && station.distance);
+        var details = distance ? "<div>Distance: " + escapeHtml(distance) + "</div>" : "";
+        return "<strong>" + title + "</strong>" + details + "<div>Tap to select</div>";
+    }
+
+    function closeAllNearbyPopups() {
+        state.nearbyStations.forEach(function (station) {
+            if (station && station.marker && typeof station.marker.closePopup === "function") {
+                station.marker.closePopup();
+            }
+        });
+    }
+
+    function clearNearbyStationSelection(options) {
+        var settings = options || {};
+
+        state.selectedNearbyStation = null;
+        closeAllNearbyPopups();
+
+        if (!settings.preserveSummary) {
+            setNearestStationSummary("Allow location access, then tap a pin to select a nearby station.");
+        }
+
+        updateOkButtonState();
+    }
+
+    function setNearbyStationSelection(station) {
+        if (!station) {
+            clearNearbyStationSelection();
+            return;
+        }
+
+        state.selectedNearbyStation = {
+            id: String(station.id || "").trim(),
+            name: normalizeStationName(station.name),
+            latitude: String(station.latitude),
+            longitude: String(station.longitude),
+            distance: station.distance
+        };
+
+        clearStationRadioSelection();
+        closeAllNearbyPopups();
+
+        if (station.marker && typeof station.marker.openPopup === "function") {
+            station.marker.openPopup();
+        }
+
+        setNearestStationSummary("Selected nearby station: " + state.selectedNearbyStation.name);
+        setLocationStatus("Move the map to reload nearby stations around the current center.");
+        updateOkButtonState();
+    }
+
+    function applyPreferredNearbySelection(stations) {
+        var preferredId = String(state.preferredNearbyStationId || "").trim();
+        var preferredName = normalizeStationName(state.preferredNearbyStationName).toLowerCase();
+        var match = null;
+
+        if (!preferredId && !preferredName) {
+            return;
+        }
+
+        match = stations.find(function (station) {
+            if (preferredId && station.id === preferredId) {
+                return true;
+            }
+
+            return preferredName && normalizeStationName(station.name).toLowerCase() === preferredName;
+        }) || null;
+
+        if (match) {
+            setNearbyStationSelection(match);
+        }
+
+        state.preferredNearbyStationId = "";
+        state.preferredNearbyStationName = "";
+    }
+
+    function renderNearbyStationsOnMap(stations) {
+        if (!state.nearbyMarkersLayer || typeof L === "undefined") {
+            return;
+        }
+
+        state.nearbyMarkersLayer.clearLayers();
+
+        stations.forEach(function (station) {
+            var marker = L.marker([station.latitude, station.longitude]);
+            marker.bindPopup(getNearbyStationPopupContent(station));
+            marker.on("click", function () {
+                setNearbyStationSelection(station);
+            });
+            marker.addTo(state.nearbyMarkersLayer);
+            station.marker = marker;
+        });
+    }
+
+    function fitNearbyStationsOnMap(stations) {
+        var bounds;
+
+        if (!state.nearbyMap || typeof L === "undefined" || !Array.isArray(stations) || stations.length === 0) {
+            return;
+        }
+
+        state.ignoreNextMapMoveReload = true;
+
+        if (stations.length === 1) {
+            state.nearbyMap.setView([
+                stations[0].latitude,
+                stations[0].longitude
+            ], NEARBY_MAP_SINGLE_STATION_ZOOM, {
+                animate: false
+            });
+            return;
+        }
+
+        bounds = L.latLngBounds(stations.map(function (station) {
+            return [station.latitude, station.longitude];
+        }));
+
+        state.nearbyMap.fitBounds(bounds, {
+            padding: [24, 24],
+            animate: false,
+            maxZoom: NEARBY_MAP_MAX_FIT_ZOOM
+        });
+    }
+
+    async function fetchNearbyStations(latitude, longitude) {
+        var query = window.API_ENDPOINT + "?o=station&a=getnearest&lat=" +
+            encodeURIComponent(Number(latitude).toFixed(3)) + "&long=" +
+            encodeURIComponent(Number(longitude).toFixed(3));
+        var response = await fetch(query, {
+            method: "GET",
+            credentials: "same-origin"
+        });
+
+        if (!response.ok) {
+            throw new Error("Unable to retrieve nearby stations.");
+        }
+
+        return await response.json();
+    }
+
+    async function reloadNearbyStationsForMap(latitude, longitude) {
+        var requestId = state.nearbyRequestSequence + 1;
+        state.nearbyRequestSequence = requestId;
+        setLocationStatus("Loading nearby stations...");
+
+        try {
+            var payload = await fetchNearbyStations(latitude, longitude);
+
+            if (requestId !== state.nearbyRequestSequence) {
+                return;
+            }
+
+            state.nearbyStations = normalizeNearbyStations(payload);
+            renderNearbyStationsOnMap(state.nearbyStations);
+            fitNearbyStationsOnMap(state.nearbyStations);
+
+            if (state.nearbyStations.length === 0) {
+                clearNearbyStationSelection({ preserveSummary: true });
+                setNearestStationSummary("No nearby station found in this area.");
+                setLocationStatus("Move the map to search another area.");
+                return;
+            }
+
+            if (state.selectedNearbyStation) {
+                var stillVisible = state.nearbyStations.find(function (station) {
+                    return station.id && station.id === state.selectedNearbyStation.id;
+                }) || null;
+
+                if (stillVisible) {
+                    setNearbyStationSelection(stillVisible);
+                    return;
+                }
+            }
+
+            clearNearbyStationSelection({ preserveSummary: true });
+            setNearestStationSummary("Tap a pin to select a nearby station.");
+            setLocationStatus("Move the map to reload nearby stations around the current center.");
+            applyPreferredNearbySelection(state.nearbyStations);
+        } catch (error) {
+            if (requestId !== state.nearbyRequestSequence) {
+                return;
+            }
+
+            state.nearbyStations = [];
+            if (state.nearbyMarkersLayer) {
+                state.nearbyMarkersLayer.clearLayers();
+            }
+            clearNearbyStationSelection({ preserveSummary: true });
+            setNearestStationSummary("Nearby stations unavailable.");
+            setLocationStatus("Unable to load nearby stations for this area.");
+        }
+    }
+
+    function scheduleNearbyStationsReload() {
+        if (!state.nearbyMap) {
+            return;
+        }
+
+        if (state.ignoreNextMapMoveReload) {
+            state.ignoreNextMapMoveReload = false;
+            return;
+        }
+
+        if (state.mapReloadTimer) {
+            window.clearTimeout(state.mapReloadTimer);
+        }
+
+        state.mapReloadTimer = window.setTimeout(function () {
+            state.mapReloadTimer = 0;
+            var center = state.nearbyMap.getCenter();
+            reloadNearbyStationsForMap(center.lat, center.lng);
+        }, 180);
+    }
+
+    function ensureNearbyMap(latitude, longitude) {
+        var elements = getPickerElements();
+
+        if (!elements.nearestStationMap || typeof L === "undefined") {
+            throw new Error("Leaflet map is not available.");
+        }
+
+        if (!state.nearbyMap) {
+            state.nearbyMap = L.map(elements.nearestStationMap, {
+                center: [latitude, longitude],
+                zoom: NEARBY_MAP_DEFAULT_ZOOM,
+                zoomControl: false,
+                scrollWheelZoom: false,
+                doubleClickZoom: false,
+                boxZoom: false,
+                keyboard: false,
+                touchZoom: false,
+                tap: true
+            });
+
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19,
+                minZoom: 3
+            }).addTo(state.nearbyMap);
+
+            state.nearbyMarkersLayer = L.layerGroup().addTo(state.nearbyMap);
+            state.nearbyMap.on("moveend", scheduleNearbyStationsReload);
+        } else {
+            state.ignoreNextMapMoveReload = true;
+            state.nearbyMap.setView([latitude, longitude], NEARBY_MAP_DEFAULT_ZOOM, {
+                animate: false
+            });
+        }
+
+        if (!state.userMarker) {
+            state.userMarker = L.circleMarker([latitude, longitude], {
+                radius: 6,
+                color: "#2a6fb2",
+                fillColor: "#2a6fb2",
+                fillOpacity: 0.9,
+                weight: 2
+            }).addTo(state.nearbyMap);
+            state.userMarker.bindPopup("Your location");
+        } else {
+            state.userMarker.setLatLng([latitude, longitude]);
+        }
+
+        window.setTimeout(function () {
+            if (state.nearbyMap) {
+                state.nearbyMap.invalidateSize();
+            }
+        }, 0);
     }
 
     function getStationCandidate() {
@@ -254,24 +622,23 @@
         var checkedRadio = getSelectedStationRadio();
         var newStation = normalizeStationName(elements.newStationInput && elements.newStationInput.value);
 
+        if (state.selectedNearbyStation && state.selectedNearbyStation.name) {
+            return {
+                source: "location",
+                name: normalizeStationName(state.selectedNearbyStation.name),
+                stationId: "",
+                latitude: String(state.selectedNearbyStation.latitude || "").trim(),
+                longitude: String(state.selectedNearbyStation.longitude || "").trim(),
+                nearestId: String(state.selectedNearbyStation.id || "").trim()
+            };
+        }
+
         if (!checkedRadio) {
             return { source: "", name: "" };
         }
 
         if (checkedRadio.value === NEW_STATION_RADIO_VALUE) {
             return newStation ? { source: "new", name: newStation, stationId: "" } : { source: "", name: "", stationId: "" };
-        }
-
-        if (checkedRadio.id === "nearestStationRadio") {
-            var nearestName = normalizeStationName(checkedRadio.value);
-            return nearestName ? {
-                source: "location",
-                name: nearestName,
-                stationId: "TODO_NEAREST",
-                latitude: String(state.locationLatitude || "").trim(),
-                longitude: String(state.locationLongitude || "").trim(),
-                nearestId: String(state.locationStationApiId || "").trim()
-            } : { source: "", name: "", stationId: "" };
         }
 
         var checkedName = getCheckedRecentStationName();
@@ -354,6 +721,8 @@
             input.checked = isStationIdMatch || isNameMatch;
 
             input.addEventListener("change", function () {
+                clearNearbyStationSelection({ preserveSummary: true });
+                setNearestStationSummary("Tap a pin to select a nearby station.");
                 updateOkButtonState();
             });
 
@@ -379,19 +748,6 @@
             overlay.classList.add("active");
         }
 
-        state.locationStationName = "";
-        state.locationStationApiId = "";
-
-        if (elements.nearestStationRadio) {
-            elements.nearestStationRadio.checked = false;
-            elements.nearestStationRadio.disabled = true;
-            elements.nearestStationRadio.value = "";
-        }
-
-        if (elements.nearestStationLabel) {
-            elements.nearestStationLabel.textContent = "Searching nearest station...";
-        }
-
         if (elements.newStationRadio) {
             elements.newStationRadio.checked = false;
         }
@@ -399,6 +755,14 @@
         if (elements.newStationInput) {
             elements.newStationInput.value = "";
         }
+
+        clearStationRadioSelection();
+        clearNearbyStationSelection({ preserveSummary: true });
+        setNearestStationSummary("Allow location access, then tap a pin to select a nearby station.");
+        setLocationStatus("Locating you...");
+        setLocationMapDisabled(true);
+        state.preferredNearbyStationId = preferences.lastStationSource === "location" ? String(preferences.lastNearestStationApiId || "") : "";
+        state.preferredNearbyStationName = preferences.lastStationSource === "location" ? preselectedName : "";
 
         renderRecentStations(await loadRecentStations(), preselectedName, preselectedStationId);
         selectStationFromLocation();
@@ -535,8 +899,8 @@
     async function createStationFromApi(name) {
         var body = new URLSearchParams();
         body.set("name", name);
-        body.set("lat", state.locationLatitude);
-        body.set("long", state.locationLongitude);
+        body.set("lat", state.userLatitude);
+        body.set("long", state.userLongitude);
 
         var response = await fetch(window.API_ENDPOINT + "?o=station&a=add", {
             method: "POST",
@@ -570,9 +934,8 @@
 
     function getCurrentPosition() {
         return new Promise(function (resolve, reject) {
-    state.locationLatitude = "";
-    state.locationLongitude = "";
-    state.locationStationApiId = "";
+            state.userLatitude = "";
+            state.userLongitude = "";
             if (!navigator.geolocation) {
                 reject(new Error("Geolocation is not supported by your browser."));
                 return;
@@ -584,26 +947,6 @@
                 maximumAge: 60000
             });
         });
-    }
-
-    function extractNearestStationCandidate(payload) {
-        if (Array.isArray(payload)) {
-            return payload[0] || null;
-        }
-
-        if (payload && Array.isArray(payload.stations)) {
-            return payload.stations[0] || null;
-        }
-
-        if (payload && Array.isArray(payload.data)) {
-            return payload.data[0] || null;
-        }
-
-        if (payload && typeof payload === "object") {
-            return payload;
-        }
-
-        return null;
     }
 
     function buildStationLabelFromLocationData(station) {
@@ -629,98 +972,23 @@
         return parts.join(", ");
     }
 
-    function bindNearestRadioChange() {
-        var nearestRadio = document.getElementById("nearestStationRadio");
-
-        if (!nearestRadio || nearestRadio.dataset.bound === "true") {
-            return;
-        }
-
-        nearestRadio.addEventListener("change", function () {
-            if (this.checked) {
-                state.locationStationName = normalizeStationName(this.value);
-            }
-            updateOkButtonState();
-        });
-
-        nearestRadio.dataset.bound = "true";
-    }
-
-    async function getNearestStationInfo(latitude, longitude) {
-        var query = window.API_ENDPOINT + "?o=station&a=getnearest&lat=" + 
-            encodeURIComponent(latitude.toFixed(3)) + "&long=" + 
-            encodeURIComponent(longitude.toFixed(3));
-        var response = await fetch(query, { method: "GET" });
-
-        if (!response.ok) {
-            throw new Error("Unable to retrieve nearest station.");
-        }
-
-        var payload = await response.json();
-        var station = extractNearestStationCandidate(payload);
-
-        if (!station) {
-            throw new Error("No nearby station found.");
-        }
-
-        var name = buildStationLabelFromLocationData(station);
-        if (!name) {
-            name = "Fuel Station (" + latitude.toFixed(3) + ", " + longitude.toFixed(3) + ")";
-        }
-
-        return {
-            name: name,
-            id: String(station.id || station.stationid || station.stationId || "").trim()
-        };
-    }
-
     async function selectStationFromLocation() {
-        var elements = getPickerElements();
-
         try {
             var position = await getCurrentPosition();
-            state.locationLatitude = String(position.coords.latitude);
-            state.locationLongitude = String(position.coords.longitude);
-            var nearestStation = await getNearestStationInfo(position.coords.latitude, position.coords.longitude);
-            var stationName = nearestStation && nearestStation.name;
-            state.locationStationApiId = nearestStation && nearestStation.id ? String(nearestStation.id) : "";
-
-            state.locationStationName = stationName;
-
-            if (elements.nearestStationRadio) {
-                elements.nearestStationRadio.disabled = false;
-                elements.nearestStationRadio.value = stationName;
-
-                if (!getSelectedStationRadio()) {
-                    elements.nearestStationRadio.checked = true;
-                }
-            }
-
-            if (elements.nearestStationLabel) {
-                elements.nearestStationLabel.textContent = stationName;
-            }
-
-            setLocationStatus("");
-
-            updateOkButtonState();
+            state.userLatitude = String(position.coords.latitude);
+            state.userLongitude = String(position.coords.longitude);
+            ensureNearbyMap(position.coords.latitude, position.coords.longitude);
+            setLocationMapDisabled(false);
+            setNearestStationSummary("Tap a pin to select a nearby station.");
+            setLocationStatus("Move the map to reload nearby stations around the current center.");
+            await reloadNearbyStationsForMap(position.coords.latitude, position.coords.longitude);
         } catch (error) {
-            state.locationStationName = "";
-            state.locationLatitude = "";
-            state.locationLongitude = "";
-            state.locationStationApiId = "";
-
-            if (elements.nearestStationRadio) {
-                elements.nearestStationRadio.checked = false;
-                elements.nearestStationRadio.disabled = true;
-                elements.nearestStationRadio.value = "";
-            }
-
-            if (elements.nearestStationLabel) {
-                elements.nearestStationLabel.textContent = "Nearest station unavailable";
-            }
-
-            setLocationStatus("Unable to retrieve a nearby station from your location.");
-            updateOkButtonState();
+            state.userLatitude = "";
+            state.userLongitude = "";
+            setLocationMapDisabled(true);
+            clearNearbyStationSelection({ preserveSummary: true });
+            setNearestStationSummary("Nearby stations unavailable.");
+            setLocationStatus("Unable to retrieve your location or nearby stations.");
         }
     }
 
@@ -769,6 +1037,8 @@
                 if (newStationRadio && this.value.trim() !== "") {
                     newStationRadio.checked = true;
                 }
+                clearNearbyStationSelection({ preserveSummary: true });
+                setNearestStationSummary("Tap a pin to select a nearby station.");
                 updateOkButtonState();
             });
         }
@@ -776,11 +1046,11 @@
         var newStationRadio = document.getElementById("newStationRadio");
         if (newStationRadio) {
             newStationRadio.addEventListener("change", function () {
+                clearNearbyStationSelection({ preserveSummary: true });
+                setNearestStationSummary("Tap a pin to select a nearby station.");
                 updateOkButtonState();
             });
         }
-
-        bindNearestRadioChange();
 
         if (okBtn) {
             okBtn.addEventListener("click", async function () {
