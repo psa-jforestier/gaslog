@@ -425,15 +425,44 @@ if ($object == 'stations')
 if ($object == 'station')
 { // Manage station : nearest, add, delete, update
     include_once(__DIR__.'/classStation.php');
+
     if ($action == 'getnearest')
     {
         
         $station = new Station($db);
+        $station->setDbStations(Database::getNewInstance(
+            $CONFIG['dbstations']['dsn'], 
+            $CONFIG['dbstations']['dbuser'], 
+            $CONFIG['dbstations']['dbpassword'])
+        );
         $lat = round(@$_P['lat'], 3); // 3 digit precision (~100m)
         $long = round(@$_P['long'], 3);
-        $radius = 2000; // fixed radius
+        if (!isset($_P['lat2']))
+        {
+            // we are in a circle search
+            $lat2 = $long2 = '';
+            $radius = 1000; // fixed radius in meter
+        }
+        else
+        {   // we are in a rectangle search
+
+            $lat2 = round(@$_P['lat2'], 3);
+            $long2 = round(@$_P['long2'], 3);
+            $radius = false;
+        }
+        
         try {
-            $stations = $station->getGasStation($lat, $long, $radius);
+            if ($radius == false)
+            {
+                // square search
+                $stations = $station->getGasStationFromLocalDB($lat, $long, $lat2, $long2,false, true);
+            }
+            else
+            {
+                // circle search
+                $stations = $station->getGasStationFromLocalDB($lat, $long, false, false, $radius);
+            }
+        
         } catch (RuntimeException $e) {
             http_response_code($station->httpcode);
             if ($station->httpcode === 504 || $station->httpcode === 429) {

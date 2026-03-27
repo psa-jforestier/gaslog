@@ -16,13 +16,20 @@ pluscode : varchar 10, location in Open Location Code / Plus Code format (can be
 class Station
 {
     public $db;
+    public $dbSations; // PDO object dedicted to the stations database
     public $httpcode;
     public function __construct($db)
     {
         $this->db = $db->pdo;
     }
+    
+    public function setDbStations($db)
+    {
+        $this->dbStations = $db->pdo;
+    }
 
-    private static function haversineMeters($lat1, $lon1, $lat2, $lon2)
+
+    public static function haversineMeters($lat1, $lon1, $lat2, $lon2)
     {
         $R = 6371000.0; // Earth radius in meters
         $toRad = function ($deg) { return $deg * M_PI / 180.0; };
@@ -63,7 +70,142 @@ class Station
         return $this->db->lastInsertId();
     }
 
+    public static function getStationInfoFromGovernmentByAPI($stationId)
+    {
+        // Call the fr government API to get station info by id
+        $url = "https://www.prix-carburants.gouv.fr/map/recuperer_infos_pdv/{$stationId}";
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER  => true,    
+            CURLOPT_CONNECTTIMEOUT  => 10,
+            CURLOPT_TIMEOUT         => 25,
+            CURLOPT_SSL_VERIFYPEER  => false,
+            CURLOPT_SSL_VERIFYHOST  => false,
+            CURLOPT_USERAGENT       => "GasLog/1.0 (contact: gaslog@forestier.xyz)", // good practice for Overpass
+        ]);
+        $raw = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        if ($raw === false) {
+            $err = curl_error($ch);
+            return false;
+        }
+        curl_close($ch);
+        if ($httpCode == 200)   
+        {
+            // use regex to extract the station name from the response, it is in the format "pdv_nom":"Station Name"
+            // the name is under <h3 class="fr-text--md">...</h3>
+            $name = '';
+            if (preg_match('/<h3 class="fr-text--md">([^<]+)<\/h3>/', $raw, $matches)) {
+                $name = html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');                
+            }
+            // the brand is under <strong>....</strong><br />
+            $brand = '';
+            if (preg_match('/<strong>([^<]+)<\/strong><br \/>/', $raw, $matches)) {
+                $brand = html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5, 'UTF-8');                
+            }
+        }
+        return ['name' => $name, 'brand' => $brand, 'http_code' => $httpCode, 'raw_result'=>substr($raw,0,16)];
+    }
+    
+    /**
+     * This function search the gas station from the local db (it may be different
+     * than the GasLog database, to have better segregation). This standalone
+     * database must be feeded by the <batch>
+     * If "usecache" is set to false, the function will call the
+     * government api for every station returned by the query, to get the name
+     * and brand info (which are not get from the import), then will store them
+     * in the database.
+     * If set to true, it will onl use brand/name from the database.
+     * Note : the search is rectangular, not circle for better perf and simplier 
+     * sql statement.
+     */
+    public function getGasStationFromLocalDB($lat, $long, $lat2 = false, $long2 = false, $radius = 1000, $usecache=true)
+    {
+        if ($lat2 === false && $radius !== false)
+        { 
+            // Convert meters to degrees
+            $latDelta = $radius / 111000; 
+            $lonDelta = $radius / (111000 * cos(deg2rad($lat)));
+            $lat1 = $lat - $latDelta; 
+            $lat2 = $lat + $latDelta;
+
+            $lon1 = $long - $lonDelta; 
+            $lon2 = $long + $lonDelta;
+        }
+        else
+        {
+            // square search
+            if ($lat > $lat2)
+            {
+                $lat1 = $lat2;
+                $lon1 = $long2;
+                $lat2 = $lat;
+                $lon2 = $long;                
+            }
+            else
+            {
+                $lat1 = $lat;
+                $lon1 = $long;
+                $lat2 = $lat2;
+                $lon2 = $long2;
+            }
+        }
+
+        $stmt = $this->dbStations->prepare("
+            SELECT *, 0 as distance_m
+            FROM stations
+            WHERE latitude  BETWEEN :lat1 AND :lat2
+            AND longitude BETWEEN :lon1 AND :lon2
+            LIMIT 100
+        ");
         
+        $stmt->execute([':lat1' => $lat1, ':lat2' => $lat2, ':lon1' => $lon1, ':lon2' => $lon2]);
+        
+        $stations = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) { 
+            $id = $row['id'];
+            
+            $name = $row['name'];
+            $brand = $row['brand'];
+            if (!$usecache || $name == '' || $name == null)
+            {
+                
+                $stationInfo = Station::getStationInfoFromGovernmentByAPI($id);
+            
+                if ($stationInfo['name'] != '')
+                {
+                    $name = $stationInfo['name'];
+                    $brand = $stationInfo['brand'];
+                    $stupdate = $this->dbStations->prepare("update stations
+                    set name = :name, brand = :brand
+                    where id = :id
+                    ");
+                    $stupdate->execute(['id'=>$row['id'], 'name'=>$name, 'brand'=>$brand]);
+                }
+                
+            }
+            
+            if ($name == $brand)
+                $brand = '';
+            else
+                $name = $brand . ' '.$name;
+            $distance = self::haversineMeters($lat, $long, $row['latitude'], $row['longitude']);
+            $stations[] = [
+                "id" => $row['id'],
+                "lat" => $row['latitude'],
+                "long" => $row['longitude'],
+                "name" => $name,
+                "city" => $row['city'],
+                "country" => 'fr', // we know that all stations in the local DB are in France
+                "house_number" =>'',
+                "post_code" => $row['zipcode'],
+                "street" => $row['address'],
+                "distance" => $distance ,
+            ];
+            
+        }
+        return $stations;
+    }
     /**
      * getGasStation($lat, $long, $radius)
      *

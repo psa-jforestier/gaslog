@@ -21,10 +21,12 @@ class Database
     {
        self::$_instance = new Database($dsn, $user, $password);
     }
- 
     return self::$_instance;
   }
-  
+  public static function getNewInstance($dsn = NULL, $user = NULL, $password = NULL)
+  {
+    return new Database($dsn, $user, $password);
+  }
   public static function NOW()
   {
     //return date(DATE_RFC3339);//'Y-M-D H:i:s');

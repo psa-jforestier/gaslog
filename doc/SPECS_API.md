@@ -151,7 +151,8 @@ This set manage gas stations.
 ### Get nearest stations
 - Purpose : Return the list of gas stations near the user. It call the Overpass API from an Openstreetmap server. Latitude and longitude are truncated to 3 digits.  The radius of the search is hard coded to 2km. This API can be called even in non-logged mode (there is no check for login user). The result of the API can be set in browser cache.
 - Method : GET
-- Query string parameters : `o=getnearest&lat=n.nnn&long=n.nnn`
+- Query string parameters : `o=getnearest&lat=n.nnn&long=n.nnn` (circle search)
+- Query string parameters : `o=getnearest&lat=n.nnn&long=n.nnn&lat2=n.nnn&long2=n.nnn` (square search)
 - JSON parameters : a lot ... 
 - Return : `{"success":true, "stations":[...]}` . Can fail with HTTP 429 (too many calls) or 504 (error when calling the Overpass API)
 
