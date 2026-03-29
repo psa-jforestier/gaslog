@@ -183,12 +183,17 @@ if ($object == 'user')
         exit;
     }
     if ($action == 'getcode') {
+		include_once('classMail.php');
         $email = @$_P['email'];
         $name = @$_P['name'];
         
         $authcode = $user->generateAuthCode($email, $name);
         // TODO send an email to the user with the code, for now we just return the code in the response
-        echo json_encode(['success' => true, 'auth_code' => $authcode]);
+		if (!isset($CONFIG['mail']))
+			DIE_WITH_ERROR(500, "mail/smtp configuration not found");
+		$mail = new Mail($CONFIG['mail']);
+		$mail->sendCode($email, $authcode);
+        echo json_encode(['success' => true, 'auth_code' => "are you kidding?"]);
         exit;
     } else if ($action == 'confirmcode') {
         $email = @$_P['email'];
