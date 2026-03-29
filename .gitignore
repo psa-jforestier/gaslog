@@ -1,4 +1,7 @@
 *.bkp
 *.dtmp
+*.lll
+*.bak
 data/gaslog.db
-data/gaslog.db
+data/stations.sqlite
+
