@@ -16,7 +16,7 @@ pluscode : varchar 10, location in Open Location Code / Plus Code format (can be
 class Station
 {
     public $db;
-    public $dbSations; // PDO object dedicted to the stations database
+    public $dbStations; // PDO object dedicted to the stations database
     public $httpcode;
     public function __construct($db)
     {
@@ -72,6 +72,7 @@ class Station
 
     public static function getStationInfoFromGovernmentByAPI($stationId)
     {
+        
         // Call the fr government API to get station info by id
         $url = "https://www.prix-carburants.gouv.fr/map/recuperer_infos_pdv/{$stationId}";
         $ch = curl_init($url);
@@ -81,6 +82,8 @@ class Station
             CURLOPT_TIMEOUT         => 25,
             CURLOPT_SSL_VERIFYPEER  => false,
             CURLOPT_SSL_VERIFYHOST  => false,
+            CURLOPT_FOLLOWLOCATION  => true,
+            CURLOPT_TIMEOUT         => 1, 
             CURLOPT_USERAGENT       => "GasLog/1.0 (contact: gaslog@forestier.xyz)", // good practice for Overpass
         ]);
         $raw = curl_exec($ch);
@@ -90,6 +93,7 @@ class Station
             return false;
         }
         curl_close($ch);
+        $name = $brand = '';
         if ($httpCode == 200)   
         {
             // use regex to extract the station name from the response, it is in the format "pdv_nom":"Station Name"
@@ -131,79 +135,194 @@ class Station
 
             $lon1 = $long - $lonDelta; 
             $lon2 = $long + $lonDelta;
+            $center_lat = $lat;
+            $center_long = $long;
         }
         else
         {
             // square search
-            if ($lat > $lat2)
-            {
-                $lat1 = $lat2;
-                $lon1 = $long2;
-                $lat2 = $lat;
-                $lon2 = $long;                
-            }
-            else
-            {
-                $lat1 = $lat;
-                $lon1 = $long;
-                $lat2 = $lat2;
-                $lon2 = $long2;
-            }
+            $minLat  = min($lat, $lat2);
+            $maxLat  = max($lat, $lat2);
+            $minLong = min($long, $long2);
+            $maxLong = max($long, $long2);
+            $lat1 = $minLat;
+            $lat2 = $maxLat;
+            $lon1 = $minLong;
+            $lon2 = $maxLong;
+            $center_lat = ($lat1 + $lat2) / 2;
+            $center_long = ($lon1 + $lon2) / 2;
         }
 
+        
         $stmt = $this->dbStations->prepare("
             SELECT *, 0 as distance_m
             FROM stations
             WHERE latitude  BETWEEN :lat1 AND :lat2
-            AND longitude BETWEEN :lon1 AND :lon2
-            LIMIT 100
-        ");
-        
-        $stmt->execute([':lat1' => $lat1, ':lat2' => $lat2, ':lon1' => $lon1, ':lon2' => $lon2]);
+            AND longitude BETWEEN :lon1 AND :lon2            
+        ");        
+        $stmt->execute([
+            ':lat1' => $lat1, ':lon1' => $lon1,
+            ':lat2' => $lat2, ':lon2' => $lon2]);
         
         $stations = [];
+        // First step, compute distance
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) { 
-            $id = $row['id'];
-            
-            $name = $row['name'];
-            $brand = $row['brand'];
-            if (!$usecache || $name == '' || $name == null)
-            {
-                
-                $stationInfo = Station::getStationInfoFromGovernmentByAPI($id);
-            
-                if ($stationInfo['name'] != '')
-                {
-                    $name = $stationInfo['name'];
-                    $brand = $stationInfo['brand'];
-                    $stupdate = $this->dbStations->prepare("update stations
-                    set name = :name, brand = :brand
-                    where id = :id
-                    ");
-                    $stupdate->execute(['id'=>$row['id'], 'name'=>$name, 'brand'=>$brand]);
-                }
-                
-            }
-            
-            if ($name == $brand)
-                $brand = '';
-            else
-                $name = $brand . ' '.$name;
-            $distance = self::haversineMeters($lat, $long, $row['latitude'], $row['longitude']);
+            $distance_m = round(self::haversineMeters($center_lat, $center_long, $row['latitude'], $row['longitude']));
             $stations[] = [
                 "id" => $row['id'],
-                "lat" => $row['latitude'],
-                "long" => $row['longitude'],
-                "name" => $name,
+                "lat" => round($row['latitude'], 5), // no need for an atomic precision, the returned payload will be lighter
+                "long" => round($row['longitude'], 5),
+                "name" => $row['name'],
+                "brand"=> $row['brand'],
                 "city" => $row['city'],
-                "country" => 'fr', // we know that all stations in the local DB are in France
+                "country" => $row['country'],
                 "house_number" =>'',
                 "post_code" => $row['zipcode'],
                 "street" => $row['address'],
-                "distance" => $distance ,
+                "distance" => $distance_m ,
             ];
+        }
+        // Then sort by distance
+        usort($stations, function($a, $b) {
+            return $a['distance'] <=> $b['distance'];
+        });
+        
+        
+        return $stations;
+    }
+
+    public function getGasStation($lat, $long, $lat2, $long2,$radius = 1000, $usecache = true)
+    {
+        if ($radius !== false)
+        {
+            // this is a circular search            
+            $query = <<<QL
+                [out:json][timeout:25];
+                (
+                nwr(around:$radius,$lat,$long)["amenity"="fuel"];
+                );
+                out center tags;
+                QL;
+        }
+        else
+        {
+            // this is a square search
+            $minLat  = min($lat, $lat2);
+            $maxLat  = max($lat, $lat2);
+            $minLong = min($long, $long2);
+            $maxLong = max($long, $long2);
+            $lat1 = $minLat;
+            $lat2 = $maxLat;
+            $lon1 = $minLong;
+            $lon2 = $maxLong;
+            $center_lat = ($lat1 + $lat2) / 2;
+            $center_long = ($lon1 + $lon2) / 2;
+            // overpass query
+            $query = <<<QL
+                [out:json][timeout:25]; 
+                ( 
+                nwr($lat1,$lon1,$lat2,$lon2)["amenity"="fuel"]; 
+                ); 
+                out center tags;
+                QL;
             
         }
+        
+        $endpoint = "https://overpass.private.coffee/api/interpreter";
+        $endpoint = "https://overpass-api.de/api/interpreter";
+        $ch = curl_init($endpoint);
+        curl_setopt_array($ch, [
+            CURLOPT_POST            => true,
+            CURLOPT_RETURNTRANSFER  => true,
+            CURLOPT_HTTPHEADER      => ["Content-Type: application/x-www-form-urlencoded; charset=UTF-8"],
+            CURLOPT_POSTFIELDS      => http_build_query(["data" => $query], "", "&"),
+            CURLOPT_CONNECTTIMEOUT  => 10,
+            CURLOPT_TIMEOUT         => 25,
+            CURLOPT_SSL_VERIFYPEER  => false,
+            CURLOPT_SSL_VERIFYHOST  => false,
+            CURLOPT_USERAGENT       => "GasLog/1.0 (contact: gaslog@forestier.xyz)", // good practice for Overpass
+        ]);
+
+        $raw = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if ($raw === false) {
+            $err = curl_error($ch);
+            curl_close($ch);
+            throw new RuntimeException("Overpass request failed (curl): $err");
+        }
+        curl_close($ch);
+        $this->httpcode = $httpCode;
+        if ($httpCode < 200 || $httpCode >= 300) {
+            throw new RuntimeException("Overpass request failed (HTTP $httpCode): $raw");
+        }
+        $json = json_decode($raw, true);
+        if (!is_array($json) || !isset($json["elements"]) || !is_array($json["elements"])) {
+            throw new RuntimeException("Invalid Overpass JSON response");
+        }
+
+        $stations = [];
+
+        foreach ($json["elements"] as $el) {
+            // Normalize coordinates:
+            // - node: lat/lon
+            // - way/relation: center.lat/center.lon (because of "out center")
+            $type = $el["type"] ?? null;
+            $id = $el["id"] ?? null;
+            $tags = $el["tags"] ?? [];
+
+            if (!$type || !$id) continue;
+
+            $pLat = null;
+            $pLon = null;
+
+            if ($type === "node") {
+                $pLat = $el["lat"] ?? null;
+                $pLon = $el["lon"] ?? null;
+            } else {
+                // way or relation
+                if (isset($el["center"]["lat"], $el["center"]["lon"])) {
+                    $pLat = $el["center"]["lat"];
+                    $pLon = $el["center"]["lon"];
+                }
+            }
+
+            if ($pLat === null || $pLon === null) continue;
+
+            $pLat = (float)$pLat;
+            $pLon = (float)$pLon;
+
+            $distance = self::haversineMeters($center_lat, $center_long, $pLat, $pLon);
+
+            // Map address tags -> requested fields
+            $station = [
+                "id"           => $type . "/" . $id,
+                "lat"          => $pLat,
+                "long"         => $pLon,
+                "name"         => $tags["name"] ?? null,
+                "brand"        => $tags["brand"] ?? null,
+                "city"         => $tags["addr:city"] ?? null,
+                "country"      => $tags["addr:country"] ?? null,
+                "house_number" => $tags["addr:housenumber"] ?? null,
+                "post_code"    => $tags["addr:postcode"] ?? null,
+                "street"       => $tags["addr:street"] ?? null,
+                "distance"     => $distance, // meters (float)
+                "source"       => $tags["ref:FR:prix-carburants"] ?? null,
+            ];
+            //var_dump($tags);
+            //var_dump($station);
+            //echo "----------\n";
+            $stations[] = $station;
+        }
+
+        // Sort by distance ascending (nearest first)
+        usort($stations, function ($a, $b) {
+         return $a["distance"] <=> $b["distance"];
+        });
+
+        // Return top 5 closest stations
+        //$stations = array_slice($stations, 0, 5);
+
         return $stations;
     }
     /**
@@ -225,7 +344,7 @@ class Station
      * @return array
      * @throws RuntimeException on HTTP/JSON errors
      */
-    function getGasStation($lat, $long, $radius = 1000)
+    function __getGasStation($lat, $long, $radius = 1000)
     {
         $lat = (float)$lat;
         $long = (float)$long;

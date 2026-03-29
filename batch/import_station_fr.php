@@ -1,5 +1,7 @@
 <?php
-
+/**
+ *  rm ../data/stations_raw.zip && rm ../data/stations_raw.xml && php import_station_fr.php
+**/
 include_once '../app/.config.php';
 include_once '.config.php';
 include_once '../app/include.php';
@@ -45,10 +47,6 @@ if (!file_exists($zipFile)) {
         die("Request failed (curl): $err");
     }
     $timestamp = curl_getinfo($ch, CURLINFO_FILETIME);
-    if ($timestamp != -1) { //otherwise unknown
-        echo "Curl filemtime :", date("Y-m-d H:i:s", $timestamp), "\n"; //etc
-
-    }
     curl_close($ch);
     // save data to file for debugging
     file_put_contents(__DIR__.'/../data/stations_raw.zip', $raw);

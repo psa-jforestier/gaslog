@@ -6,8 +6,6 @@
         //"BP - Centre Ville"
     ];
     var NEARBY_MAP_DEFAULT_ZOOM = 15;
-    var NEARBY_MAP_SINGLE_STATION_ZOOM = 16;
-    var NEARBY_MAP_MAX_FIT_ZOOM = 16;
 
     var state = {
         userLatitude: "",
@@ -442,40 +440,39 @@
         });
     }
 
-    function fitNearbyStationsOnMap(stations) {
+    function getCurrentMapBoundingBox() {
         var bounds;
+        var northWest;
+        var southEast;
 
-        if (!state.nearbyMap || typeof L === "undefined" || !Array.isArray(stations) || stations.length === 0) {
-            return;
+        if (!state.nearbyMap || typeof state.nearbyMap.getBounds !== "function") {
+            return null;
         }
 
-        state.ignoreNextMapMoveReload = true;
+        bounds = state.nearbyMap.getBounds();
+        northWest = bounds.getNorthWest();
+        southEast = bounds.getSouthEast();
 
-        if (stations.length === 1) {
-            state.nearbyMap.setView([
-                stations[0].latitude,
-                stations[0].longitude
-            ], NEARBY_MAP_SINGLE_STATION_ZOOM, {
-                animate: false
-            });
-            return;
-        }
-
-        bounds = L.latLngBounds(stations.map(function (station) {
-            return [station.latitude, station.longitude];
-        }));
-
-        state.nearbyMap.fitBounds(bounds, {
-            padding: [24, 24],
-            animate: false,
-            maxZoom: NEARBY_MAP_MAX_FIT_ZOOM
-        });
+        return {
+            lat: northWest.lat,
+            long: northWest.lng,
+            lat2: southEast.lat,
+            long2: southEast.lng
+        };
     }
 
-    async function fetchNearbyStations(latitude, longitude) {
-        var query = window.API_ENDPOINT + "?o=station&a=getnearest&lat=" +
-            encodeURIComponent(Number(latitude).toFixed(3)) + "&long=" +
-            encodeURIComponent(Number(longitude).toFixed(3));
+    async function fetchNearbyStations(searchBounds) {
+        var query;
+
+        if (!searchBounds) {
+            throw new Error("Missing map bounds for nearby station search.");
+        }
+
+        query = window.API_ENDPOINT + "?o=station&a=getnearest&lat=" +
+            encodeURIComponent(Number(searchBounds.lat).toFixed(3)) + "&long=" +
+            encodeURIComponent(Number(searchBounds.long).toFixed(3)) + "&lat2=" +
+            encodeURIComponent(Number(searchBounds.lat2).toFixed(3)) + "&long2=" +
+            encodeURIComponent(Number(searchBounds.long2).toFixed(3));
         var response = await fetch(query, {
             method: "GET",
             credentials: "same-origin"
@@ -488,13 +485,14 @@
         return await response.json();
     }
 
-    async function reloadNearbyStationsForMap(latitude, longitude) {
+    async function reloadNearbyStationsForMap() {
+        var searchBounds = getCurrentMapBoundingBox();
         var requestId = state.nearbyRequestSequence + 1;
         state.nearbyRequestSequence = requestId;
         setLocationStatus("Loading nearby stations...");
 
         try {
-            var payload = await fetchNearbyStations(latitude, longitude);
+            var payload = await fetchNearbyStations(searchBounds);
 
             if (requestId !== state.nearbyRequestSequence) {
                 return;
@@ -502,7 +500,6 @@
 
             state.nearbyStations = normalizeNearbyStations(payload);
             renderNearbyStationsOnMap(state.nearbyStations);
-            fitNearbyStationsOnMap(state.nearbyStations);
 
             if (state.nearbyStations.length === 0) {
                 clearNearbyStationSelection({ preserveSummary: true });
@@ -524,7 +521,7 @@
 
             clearNearbyStationSelection({ preserveSummary: true });
             setNearestStationSummary("Tap a pin to select a nearby station.");
-            setLocationStatus("Move the map to reload nearby stations around the current center.");
+            setLocationStatus("Move the map to reload nearby stations in the current area.");
             applyPreferredNearbySelection(state.nearbyStations);
         } catch (error) {
             if (requestId !== state.nearbyRequestSequence) {
@@ -557,9 +554,8 @@
 
         state.mapReloadTimer = window.setTimeout(function () {
             state.mapReloadTimer = 0;
-            var center = state.nearbyMap.getCenter();
-            reloadNearbyStationsForMap(center.lat, center.lng);
-        }, 180);
+            reloadNearbyStationsForMap();
+        }, 250);
     }
 
     function ensureNearbyMap(latitude, longitude) {
@@ -980,8 +976,8 @@
             ensureNearbyMap(position.coords.latitude, position.coords.longitude);
             setLocationMapDisabled(false);
             setNearestStationSummary("Tap a pin to select a nearby station.");
-            setLocationStatus("Move the map to reload nearby stations around the current center.");
-            await reloadNearbyStationsForMap(position.coords.latitude, position.coords.longitude);
+            setLocationStatus("Move the map to reload nearby stations in the current area.");
+            await reloadNearbyStationsForMap();
         } catch (error) {
             state.userLatitude = "";
             state.userLongitude = "";

@@ -17,3 +17,10 @@ function DIE_WITH_ERROR(
     <?php
     die();
 }
+
+function DEBUG($str)
+{
+    echo date('Y-m-d H:i:s') . " - ";
+    echo $str;
+    echo "\n";
+}

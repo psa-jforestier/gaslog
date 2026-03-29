@@ -199,8 +199,8 @@
     let accuracyCircle = null;
     let stationsGroup = null;
     let fetchController = null;   // AbortController for in-flight station requests
+    let moveDebounceTimer = null;    // debounce timer for map move/zoom
     const API_BASE_URL = "http://localhost:8000/app/api.php";
-    const SEARCH_RADIUS_METERS = 1000;
 
     /* ── DOM refs ───────────────────────────────────────────── */
     const $loading     = document.getElementById("loading");
@@ -296,11 +296,16 @@
 
     /* ── Station API query ──────────────────────────────────── */
     function onMapMoveEnd() {
-        const c = map.getCenter();
-        fetchStations(c.lat, c.lng);
+        clearTimeout(moveDebounceTimer);
+        moveDebounceTimer = setTimeout(() => {
+            const bounds = map.getBounds();
+            const nw = bounds.getNorthWest();
+            const se = bounds.getSouthEast();
+            fetchStations(nw.lat, nw.lng, se.lat, se.lng);
+        }, 250);
     }
 
-    function fetchStations(lat, lng) {
+    function fetchStations(lat, lng, lat2, lng2) {
         // Cancel any previous in-flight request
         if (fetchController) fetchController.abort();
         fetchController = new AbortController();
@@ -310,11 +315,12 @@
             a: "getnearest",
             lat: String(lat),
             long: String(lng),
-            radius: String(SEARCH_RADIUS_METERS)
+            lat2: String(lat2),
+            long2: String(lng2)
         });
 
         setStatus("Fetching stations…");
-
+        // Fetch gas stations in the map viewport (rectangular search).
         fetch(`${API_BASE_URL}?${params.toString()}`, {
             method: "GET",
             signal:  fetchController.signal
@@ -330,7 +336,7 @@
 
             if (data.success === false) {
                 stationsGroup.clearLayers();
-                $badge.textContent = "⛽ 0 station in 1000 m";
+                $badge.textContent = "⛽ 0 stations in view";
                 setStatus(data.message || "Could not load stations");
                 return;
             }
@@ -383,7 +389,7 @@
         });
 
         const n = stations.length;
-        $badge.textContent = `⛽ ${n} station${n !== 1 ? "s" : ""} in ${SEARCH_RADIUS_METERS} m`;
+        $badge.textContent = `⛽ ${n} station${n !== 1 ? "s" : ""} in view`;
         setStatus(`${n} station${n !== 1 ? "s" : ""} found`);
     }
 
@@ -416,7 +422,13 @@
                 }
 
                 placeUserMarker(latitude, longitude, accuracy);
-                fetchStations(latitude, longitude);
+                // Fetch stations based on current map bounds after a brief delay
+                setTimeout(() => {
+                    const bounds = map.getBounds();
+                    const nw = bounds.getNorthWest();
+                    const se = bounds.getSouthEast();
+                    fetchStations(nw.lat, nw.lng, se.lat, se.lng);
+                }, 300);
                 setStatus("Location acquired");
             },
             err => {
@@ -432,7 +444,12 @@
                 // Show map anyway using a fallback (Paris)
                 if (!map) {
                     buildMap(48.8566, 2.3522);
-                    fetchStations(48.8566, 2.3522);
+                    setTimeout(() => {
+                        const bounds = map.getBounds();
+                        const nw = bounds.getNorthWest();
+                        const se = bounds.getSouthEast();
+                        fetchStations(nw.lat, nw.lng, se.lat, se.lng);
+                    }, 300);
                     setStatus("GPS unavailable — showing Paris demo");
                 }
             },

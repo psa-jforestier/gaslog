@@ -429,6 +429,7 @@ if ($object == 'station')
     if ($action == 'getnearest')
     {
         
+        $T = microtime(true);
         $station = new Station($db);
         $station->setDbStations(Database::getNewInstance(
             $CONFIG['dbstations']['dsn'], 
@@ -450,11 +451,11 @@ if ($object == 'station')
             $long2 = round(@$_P['long2'], 3);
             $radius = false;
         }
-        
         try {
             if ($radius == false)
             {
                 // square search
+                //$stations = $station->getGasStationFromLocalDB($lat, $long, $lat2, $long2,false, true);
                 $stations = $station->getGasStationFromLocalDB($lat, $long, $lat2, $long2,false, true);
             }
             else
@@ -474,8 +475,14 @@ if ($object == 'station')
             exit; 
         }
         $cacheduration = 3600 * 24;
-        header('cache-control: public, max-age=' . $cacheduration . ', s-maxage=' . $cacheduration);
-        header("ETag: $lat/$long");
+        @header('cache-control: public, max-age=' . $cacheduration . ', s-maxage=' . $cacheduration);
+        @header("ETag: $lat/$long/$lat2/$long2/$radius");
+        @header('x-api-performance: ' . round(1000*(microtime(true) - $T)) . ' ms');
+        if (@$_P['nooutput'] == '1') {
+            // if nooutput is set, we just return the success status without the stations data, used for performance testing
+            echo json_encode(['success' => true, 'nb_stations' => count($stations)]);
+            exit;
+        }
         echo json_encode(['success' => true, 'stations' => $stations]);
         exit;
     }
