@@ -474,10 +474,11 @@ if ($object == 'station')
             }
             exit; 
         }
-        $cacheduration = 3600 * 24;
+        $cacheduration = 3600 * 24 * 7; // 7 days
         @header('cache-control: public, max-age=' . $cacheduration . ', s-maxage=' . $cacheduration);
-        @header("ETag: $lat/$long/$lat2/$long2/$radius");
+        @header("ETag: ${lat}_${long}_${lat2}_${long2}_${radius}");
         @header('x-api-performance: ' . round(1000*(microtime(true) - $T)) . ' ms');
+        @header_remove('Set-Cookie');// unset cookie for station request to avoid caching issue with userhash cookie, as the station request is cached for 7 days, we don't want to cache the userhash cookie with it
         if (@$_P['nooutput'] == '1') {
             // if nooutput is set, we just return the success status without the stations data, used for performance testing
             echo json_encode(['success' => true, 'nb_stations' => count($stations)]);
