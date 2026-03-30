@@ -382,7 +382,7 @@ textarea:focus {
 
 .station-picker-map {
     width: 100%;
-    height: 260px;
+    height: 400px;
     background: var(--chip-bg);
 }
 

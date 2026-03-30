@@ -52,12 +52,14 @@
         if (!station || typeof station !== "object") {
             return "";
         }
-
+        /**
         var street = normalizeStationName(station.street);
         var postCode = normalizeStationName(station.post_code);
         var city = normalizeStationName(station.city);
         var cityLine = [postCode, city].filter(Boolean).join(" ");
         return [street, cityLine].filter(Boolean).join(", ");
+         */
+        return station.street || '';
     }
 
     function escapeHtml(value) {
@@ -129,6 +131,7 @@
                 id: String(station && (station.id || station.stationid || station.stationId) || "").trim(),
                 name: buildStationLabelFromLocationData(station),
                 address: buildStationAddressFromLocationData(station),
+                city: normalizeStationName(station && station.post_code) + " " + normalizeStationName(station && station.city),
                 latitude: latitude,
                 longitude: longitude,
                 distance: Number(station && station.distance)
@@ -241,11 +244,12 @@
         var parts = ["<strong>" + escapeHtml(station.name) + "</strong>"];
 
         if (distanceLabel) {
-            parts.push(" - Distance: " + escapeHtml(distanceLabel) + "");
+            parts.push(" - " + escapeHtml(distanceLabel) + "");
         }
         if (addressLabel) {
             parts.push("<div>" + escapeHtml(addressLabel) + "</div>");
         }
+        parts.push(station.city);
         parts.push("<div><a href=\"https://maps.google.com/maps?q=" + encodeURIComponent(station.latitude) + "," + encodeURIComponent(station.longitude) + "\" target=\"_blank\">Drive to it</a></div>");
 
         
