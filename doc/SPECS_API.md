@@ -153,6 +153,7 @@ This set manage gas stations.
 - Method : GET
 - Query string parameters : `o=getnearest&lat=n.nnn&long=n.nnn` (circle search)
 - Query string parameters : `o=getnearest&lat=n.nnn&long=n.nnn&lat2=n.nnn&long2=n.nnn` (square search)
+- Extra quesry strings parameters : `nooutput=1` : to not output result
 - JSON parameters : a lot ... 
 - Return : `{"success":true, "stations":[...]}` . Can fail with HTTP 429 (too many calls) or 504 (error when calling the Overpass API)
 

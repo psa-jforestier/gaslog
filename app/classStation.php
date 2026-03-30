@@ -158,7 +158,8 @@ class Station
             SELECT *, 0 as distance_m
             FROM stations
             WHERE latitude  BETWEEN :lat1 AND :lat2
-            AND longitude BETWEEN :lon1 AND :lon2            
+            AND longitude BETWEEN :lon1 AND :lon2
+                       
         ");        
         $stmt->execute([
             ':lat1' => $lat1, ':lon1' => $lon1,
