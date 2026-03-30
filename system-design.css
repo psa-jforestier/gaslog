@@ -433,6 +433,38 @@ textarea:focus {
     color: var(--panel-muted);
 }
 
+.nearby-stations-list {
+    gap: 6px;
+}
+
+.nearby-station-card {
+    padding: 2px 2px;
+}
+
+.nearby-station-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.nearby-station-name {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nearby-station-distance {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.2;
+    color: var(--panel-muted);
+    white-space: nowrap;
+}
+
 .stats-table-wrap {
     /**overflow-x: auto;**/
     /**border: 1px solid var(--panel-border);**/
