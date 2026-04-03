@@ -108,6 +108,93 @@
         return Math.round(numericDistance) + " m";
     }
 
+    /** most used brand in FR and other EU country (no particular order)
+     * Intermarché / Mousquetaires
+     * Total / TotalEnergies / Total access / Total contact
+     * Carrefour / Carrefour Market
+     * Avia
+     * Leclerc
+     * Esso / Esso express
+     * Super U / Systeme U
+     * Elan 
+     * Auchan
+     * Shell
+     * Eni
+     * Dyneff
+     * Mobil
+     * Casino
+     * AS24
+     * Repsol
+     * BP
+     * Aral
+     * Tesco
+     * Tamoil
+     */
+    function getBrandMarkerColor(brand, name) {
+        const brandColors = {
+            "intermarch": "#E2001A",
+            "mousquetaires": "#E2001A",
+            "total": "#E50019",
+            "carrefour": "#003D8F",
+            "avia": "#D50000",
+            "leclerc": "#005BBB",
+            "esso": "#005CB9",
+            "super u": "#007BC4",
+            "systeme u": "#007BC4",
+            "système u": "#007BC4",
+            "elan": "#009639",
+            "auchan": "#E2001A",
+            "shell": "#FFD500",
+            "eni": "#F7D117",
+            "dyneff": "#D71920",
+            "mobil": "#0054A4",
+            "casino": "#00843D",
+            "as24": "#0033A0",
+            "repsol": "#FF5F00",
+            "bp": "#009A44",
+            "aral": "#005EB8",
+            "tesco": "#00539F",
+            "tamoil": "#005BBB",
+            "engie": "#009BDE",
+            "q8": "#20419A",
+        };
+
+        var normalizedBrand = String(brand || "").trim().toLowerCase();
+        
+        // if the brand contains a known brand name, use its color        
+        for (const knownBrand in brandColors) {
+            if (normalizedBrand.includes(knownBrand)) {
+                return brandColors[knownBrand];
+            }
+        }
+        var normalizedName = String(name || "").trim().toLowerCase();
+        for (const knownBrand in brandColors) {
+            if (normalizedName.includes(knownBrand)) {
+                return brandColors[knownBrand];
+            }
+        }
+
+        return "#000000";
+    }
+
+    function buildStationPinIcon(color) {
+        var markerColor = String(color || "#000000");
+        var svg = [
+            '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="46" viewBox="0 0 34 46" aria-hidden="true">',
+            '<path fill="' + markerColor + '" d="M17 1C8.2 1 1 8.2 1 17c0 11.4 16 28 16 28s16-16.6 16-28C33 8.2 25.8 1 17 1z"/>',
+            '<circle cx="17" cy="17" r="8" fill="#ffffff"/>',
+            '<text x="17" y="21" text-anchor="middle" font-size="11" font-family="Arial, sans-serif" fill="' + markerColor + '">⛽</text>',
+            '</svg>'
+        ].join("");
+
+        return L.icon({
+            iconUrl: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
+            iconSize: [34, 46],
+            iconAnchor: [17, 46],
+            popupAnchor: [0, -40]
+        });
+    }
+
     function normalizeNearbyStations(payload) {
         var rawStations = [];
 
@@ -130,6 +217,7 @@
             return {
                 id: String(station && (station.id || station.stationid || station.stationId) || "").trim(),
                 name: buildStationLabelFromLocationData(station),
+                brand: normalizeStationName(station && station.brand),
                 address: buildStationAddressFromLocationData(station),
                 city: normalizeStationName(station && station.post_code) + " " + normalizeStationName(station && station.city),
                 latitude: latitude,
@@ -265,7 +353,10 @@
         state.nearbyMarkersLayer.clearLayers();
 
         stations.forEach(function (station) {
-            var marker = L.marker([station.latitude, station.longitude]);
+            var stationPinIcon = buildStationPinIcon(getBrandMarkerColor(station.brand, station.name));
+            var marker = L.marker([station.latitude, station.longitude], {
+                icon: stationPinIcon
+            });
             marker.bindPopup(getMarkerPopupContent(station));
             marker.addTo(state.nearbyMarkersLayer);
             station.marker = marker;
