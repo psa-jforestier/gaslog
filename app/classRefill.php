@@ -74,9 +74,11 @@ class Refill
             {
                 if ($d['mileage'] < $distance_min) $distance_min = $d['mileage'];
                 if ($d['mileage'] > $distance_max) $distance_max = $d['mileage'];
-            }
+	    }
+	    if ($d['quantity'] === '')
+		    $d['quantity'] = 0.0;
             $fuel_price_per_L += $d['unit_price'];
-            $cost_per_100km += $d['total_price'];
+	    $cost_per_100km += $d['total_price'];
             $fuel_consumption_L_per_100km += $d['quantity'];
         }
         
