@@ -50,8 +50,27 @@ function renderRefillHistoryRows(refills, emptyMessage) {
         return;
     }
 
+    const vehicleId = getVehicleIdFromQueryString();
+
     sortRefillsByDateDesc(refills).forEach(function (refill) {
             const row = document.createElement("tr");
+            if (refill.id != null && vehicleId) {
+                const href = buildVehiclePageHref("refill_details.html", vehicleId)
+                    + "&refillid=" + encodeURIComponent(refill.id);
+                row.className = "refill-history-link";
+                row.tabIndex = 0;
+                row.setAttribute("role", "link");
+                row.setAttribute("aria-label", "View refill details: " + formatRefillDate(refill.date));
+                row.addEventListener("click", function () {
+                    window.location.href = href;
+                });
+                row.addEventListener("keydown", function (event) {
+                    if (event.key === "Enter") {
+                        event.preventDefault();
+                        window.location.href = href;
+                    }
+                });
+            }
             const values = [
                 formatRefillDate(refill.date),
                 formatMoneyValue(refill.totalPrice, refill.currency),

@@ -10,7 +10,7 @@ class Refill
         $this->db = $db->pdo;
     }
 
-    private static $REFILL_INFO = "refill_date, station_id, fuel, unit_price, currency, quantity, total_price, mileage, station_info";
+    private static $REFILL_INFO = "id, refill_date, station_id, fuel, unit_price, currency, quantity, total_price, mileage, station_info";
 
     /**
       * Add refill to the database. Volume / Quantity must be in liters
@@ -81,7 +81,6 @@ class Refill
 	    $cost_per_100km += $d['total_price'];
             $fuel_consumption_L_per_100km += $d['quantity'];
         }
-        
         if (is_numeric($distance_min) && is_numeric($distance_max))
         {
             $distance = $distance_max - $distance_min;
@@ -145,6 +144,21 @@ class Refill
         $stmt = $this->db->prepare("delete from refill where user_id = :userid");
         $stmt->execute(['userid' => $userid]);
         return true;
+    }
+
+    public function getRefillDetail($refillid, $vehicleid, $userid)
+    {
+        $stmt = $this->db->prepare("select * from refill where id = :refillid and vehicle_id = :vehicleid and user_id = :userid");
+        $stmt->bindValue(':refillid', $refillid, PDO::PARAM_INT);
+        $stmt->bindValue(':vehicleid', $vehicleid, PDO::PARAM_INT);
+        $stmt->bindValue(':userid', $userid, PDO::PARAM_INT);
+        $stmt->execute();
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$data)
+        {
+            return false;
+        }
+        return $data;
     }
 
 }

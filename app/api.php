@@ -290,6 +290,22 @@ if ($object == 'refill')
     $userinfo = $user->getUserInfoByUserHash($userhash);
     $userid = $userinfo['id'];
     $refill = new Refill($db);
+    if ($action == 'detail')
+    {
+        $refillid = @$_P['refillid'];
+        $vehicleid = @$_P['vehicleid'];
+        if (!$refillid) {
+            echo json_encode(['success' => false, 'message' => 'Refill ID is required']);
+            exit;
+        }
+        $res = $refill->getRefillDetail($refillid, $vehicleid, $userid);
+        if ($res == false) {
+            echo json_encode(['success' => false, 'message' => 'Refill not found']);
+        } else {
+            echo json_encode(['success' => true, 'data' => $res]);
+        }
+        exit;
+    }
     if ($action == 'add')
     {
         // Fixup some data

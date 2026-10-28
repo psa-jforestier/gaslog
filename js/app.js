@@ -230,6 +230,7 @@ function normalizeRefillRecords(payload) {
         }
 
         return {
+            id: item.id,
             date: item.refill_date || item.refillDate || item.date || item.created_at || item.createdAt || "",
             totalPrice: item.total_price || item.totalPrice || item.price_total || item.priceTotal,
             quantity: item.quantity || item.volume || item.qty,
