@@ -192,7 +192,7 @@ if ($object == 'user')
 		if (!isset($CONFIG['mail']))
 			DIE_WITH_ERROR(500, "mail/smtp configuration not found");
 		$mail = new Mail($CONFIG['mail']);
-		$mail->sendCode($email, $authcode);
+		$res = @$mail->sendCode($email, $authcode);
         echo json_encode(['success' => true, 'auth_code' => "are you kidding?"]);
         exit;
     } else if ($action == 'confirmcode') {
@@ -496,7 +496,7 @@ if ($object == 'station')
             exit; 
         }
         @header('Cache-Control: public, max-age=3600, s-maxage=86400'); // cache the station response for 1 hour in the browser and 1 day in the CDN (e.g. Cloudflare)
-        @header("ETag: \"${lat}_${long}_${lat2}_${long2}_${radius}\"");
+        @header("ETag: \"{$lat}_{$long}_{$lat2}_{$long2}_{$radius}\"");
         @header('x-api-performance: ' . round(1000*(microtime(true) - $T)) . ' ms');
         @header_remove('Set-Cookie');// unset cookie for station request to avoid caching issue with userhash cookie, as the station request is cached for 7 days, we don't want to cache the userhash cookie with it
         if (@$_P['nooutput'] == '1') {

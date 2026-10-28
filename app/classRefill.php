@@ -68,31 +68,34 @@ class Refill
         $distance_min = $refills[0]['mileage'];
         $distance_max = $refills[0]['mileage'];
         
-        foreach($refills as $d)
+        foreach($refills as $i=>$d)
         {
             if ($d['mileage'] != '')
             {
                 if ($d['mileage'] < $distance_min) $distance_min = $d['mileage'];
                 if ($d['mileage'] > $distance_max) $distance_max = $d['mileage'];
-	    }
-	    if ($d['quantity'] === '')
-		    $d['quantity'] = 0.0;
-            $fuel_price_per_L += $d['unit_price'];
-	    $cost_per_100km += $d['total_price'];
-            $fuel_consumption_L_per_100km += $d['quantity'];
-        }
-        if (is_numeric($distance_min) && is_numeric($distance_max))
-        {
-            $distance = $distance_max - $distance_min;
-            $cost_per_100km = 100 * ($cost_per_100km - end($refills)['total_price']) / $distance;
-            $fuel_consumption_L_per_100km = 100 * ($fuel_consumption_L_per_100km - end($refills)['quantity']) / $distance;
-        }
-        else
-        {
-            $distance = null;
-            $cost_per_100km = null;
-            $fuel_consumption_L_per_100km = null;
-        }
+			}
+			if ($d['quantity'] === '')
+			{
+				$d['quantity'] = 0.0;
+				$refills[$i]['quantity'] = 0.0;
+			}
+			$fuel_price_per_L += $d['unit_price'];
+			$cost_per_100km += $d['total_price'];
+			$fuel_consumption_L_per_100km += $d['quantity'];
+		}
+		if (is_numeric($distance_min) && is_numeric($distance_max))
+		{
+			$distance = $distance_max - $distance_min;
+			$cost_per_100km = 100 * ($cost_per_100km - end($refills)['total_price']) / $distance;
+			$fuel_consumption_L_per_100km = 100 * ($fuel_consumption_L_per_100km - end($refills)['quantity']) / $distance;
+		}
+		else
+		{
+			$distance = null;
+			$cost_per_100km = null;
+			$fuel_consumption_L_per_100km = null;
+		}
         $fuel_price_per_L = $fuel_price_per_L / count($refills);
                 
         return [
